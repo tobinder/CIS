@@ -1,0 +1,53 @@
+#manual labeling boundary/no-boundary
+./cis -pixel-labels images/*.bmp images/as/ pixel-labels/
+#compute the features on the labled training data
+./cis -pixel-classification-set images/*.bmp images/as/ pixel-labels/ pixel-classification/name
+#train the random-forest with the classification-set
+./cis -pixel-rf-train pixel-classification/name pixel-classification/random-forests/name
+
+#compute the features of a whole image
+./cis -pixel-features images/*.bmp images/as/ pixel-features/
+#create a probability-map from given pixel-features and random-forest
+./cis -pixel-rf-predict images/*.bmp pixel-features/ pixel-classification/random-forests/name pixel-classification/probability-maps/
+#create watershed-segmentation from a given probability-map AND ACTUALLY cgp-structure calculation
+./cis -ws-regions pixel-classification/probability-maps/*.bmp pixel-classification/watershed-segmentation/
+
+#create watershed-segmentation from an extern generated binary map
+./cis -ws-manual binary-maps/*.bmp pixel-classification/watershed-segmentation/
+#create watershed-segmentation from an extern preprocessed probability-map
+./cis -ws pixel-classification/probability-maps/*.bmp image/image_name.bmp pixel-classification/watershed-segmentation/
+
+#all pixel-functions together, at least labels for one image
+./cis -pixel-complete-image images/*.bmp #image batch mode
+./cis -pixel-complete-param images/image.bmp parameterfiles/*.txt #parameter batch mode
+./cis -pixel-complete-suffix suffix/ images/*.bmp #image batch mode with suffix
+
+#compute the cpg boundary structure and save this combined with cgp-structure calculation -> NOT NECESSARY, actually included in "-ws-regions"
+#./cis -cgp-structure pixel-classification/watershed-segmentation/*.h5 pixel-classification/watershed-segmentation/
+
+#parallelised with Boost.MPI, batch mode only with shell script -> NOT NECESSARY, MPI parallisation only when started seperately
+#mpirun -np 8 ./cis -cgp-structure pixel-classification/watershed-segmentation/image.bmp.h5 pixel-classification/watershed-segmentation/
+
+#compute the features of a whole image
+./cis -boundary-features images/*.bmp pixel-classification/watershed-segmentation/ pixel-classification/probability-maps/ pixel-features/ boundary-features/
+
+#manual labeling of boundaries in different classes
+./cis -boundary-labels images/*.bmp pixel-classification/watershed-segmentation/ boundary-labels/
+#create a boundary trainingset
+./cis -boundary-classification-set boundary-labels/*.bmp.dat boundary-features/ boundary-classification/trainingsets/name
+#train the boundary-random-forest with the boundary trainingset
+./cis -boundary-rf-train boundary-classification/trainingsets/name boundary-classification/random-forests/name
+
+#rf-prediction
+./cis -boundary-rf-predict boundary-features/*.bmp.bin pixel-classification/watershed-segmentation/ boundary-classification/random-forests/name rf-predictions/
+# rf-predictions need several folders!
+
+#all boundary-functions together, at least labels for one image (labels must correspond with ws-segmentation)
+./cis -boundary-complete-image images/*.bmp #image batch mode
+./cis -boundary-complete-param images/image.bmp parameterfiles/*.txt #parameter batch mode
+
+#calculate junction features for training image, create classification set and train junction random forest
+./cis -junctions /images/image.bmp pixel-classification/watershed-segmentation/ boundary-labels/image.bmp.junctions.dat junction-classification/trainingsets/name junction-classification/random-forests/name
+
+#create a bubble image from two existing preprocessed images (*.as.bmp and *.de.bmp). The resulting bubble image is saved in the same folder as the original image.
+./cis -bubbles images/*.bmp images/as/

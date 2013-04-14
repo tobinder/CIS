@@ -1,0 +1,151 @@
+#PARAMETER FILE FOR CIS TOOL
+
+#PATHS
+config.filepath_as_image /home/tobinder/Data/as/
+config.path_pixel_label pixel-labels/
+config.path_pixel_feature pixel-features/
+config.path_pixel_classification pixel-classification/
+config.path_pixel_rf pixel-classification/random-forests/
+config.path_prob_map pixel-classification/probability-maps/
+config.path_watershed pixel-classification/watershed-segmentation/
+config.path_thumbs thumbs/
+config.path_boundary_feature boundary-features/
+config.path_boundary_label boundary-labels/
+config.path_boundary_classification boundary-classification/trainingsets/
+config.path_boundary_rf boundary-classification/random-forests/
+config.path_rf_predictions rf-predictions/
+
+#IT IS SUFFICIENT TO HAVE ONE IMAGE LABELED
+config.default_pixel_label NEEMcomplete
+config.filepath_default_image /home/tobinder/Data/test.bmp
+config.filepath_default_as_image /home/tobinder/Data/as/test.bmp.as.bmp
+config.path_default_prob_map pixel-classification/probability-maps/
+config.path_default_watershed pixel-classification/watershed-segmentation/
+config.default_boundary_label NEEM_LM018610_03 #do not fit to default image!!
+
+#PARAMETERS FOR LABELING
+config.display_x 1000
+config.display_y 700
+
+#PARAMETERS FOR RF-LEARNING
+config.nr_of_trees 256
+
+#PARAMETERS FOR RF-PREDICTION
+#set to 0=no threshold set to 0.1..10=factor for calculation
+config.gray_threshold 5
+#set to 0=no threshold
+config.light_threshold 130
+#set to 0=no threshold
+config.feature_threshold 0.0 
+config.no_boundary_probability 1.0
+
+#PARAMETERS FOR WS-SEGMENTATION
+config.threshold 26
+config.scale 1
+config.equal_tolerance 1
+
+#PARAMETERS FOR IMAGE SELECTION
+config.blocksize 100
+config.grayvalue_difference 50
+
+#PARAMETERS FOR PIXEL-FEATURE CALCULATION
+#SET TO 0 MEANS THAT FEATURES ARE NOT INCLUDED    
+#by setting eigenvalues_structure or eigenvalues_hessian to 1/2
+#only the first/second eigenvalue can be choosen
+
+config.grayvalue false
+
+config.gradient_magnitude1 0 #1.0
+config.gradient_magnitude2 0 #1.5
+config.gradient_magnitude3 0 #3.0
+
+config.eigenvalues_structure_tensor1a 0 #1.0
+config.eigenvalues_structure_tensor1b 0.6
+config.eigenvalues_structure1 0
+config.eigenvalues_structure_tensor2a 0 #1.5
+config.eigenvalues_structure_tensor2b 0.9
+config.eigenvalues_structure2 0
+config.eigenvalues_structure_tensor3a 0 #2.0
+config.eigenvalues_structure_tensor3b 1.2
+config.eigenvalues_structure3 0
+
+config.eigenvalues_hessian_matrix1 0 #1.0
+config.eigenvalues_hessian1 0
+config.eigenvalues_hessian_matrix2 0 #1.5
+config.eigenvalues_hessian2 0
+config.eigenvalues_hessian_matrix3 0 #2.0 
+config.eigenvalues_hessian3 0
+
+config.boundary_strength1 0 #0.5
+config.boundary_strength2 0 #1.0
+config.boundary_strength3 0 #1.5
+
+config.grayvalue_as false
+
+config.gradient_magnitude_as1 0 #1.0
+config.gradient_magnitude_as2 0 #1.5
+config.gradient_magnitude_as3 0 #3.0
+
+config.eigenvalues_structure_tensor_as1a 1.0
+config.eigenvalues_structure_tensor_as1b 0.6
+config.eigenvalues_structure_as1 1 #0
+config.eigenvalues_structure_tensor_as2a 1.5
+config.eigenvalues_structure_tensor_as2b 0.9
+config.eigenvalues_structure_as2 1 #0
+config.eigenvalues_structure_tensor_as3a 0 #2.0
+config.eigenvalues_structure_tensor_as3b 1.2
+config.eigenvalues_structure_as3 0
+
+config.eigenvalues_hessian_matrix_as1 0 #1.0
+config.eigenvalues_hessian_as1 0
+config.eigenvalues_hessian_matrix_as2 0 #1.5
+config.eigenvalues_hessian_as2 0
+config.eigenvalues_hessian_matrix_as3 2.0
+config.eigenvalues_hessian_as3 2 #0 
+
+config.boundary_strength_as1 0 #0.5
+config.boundary_strength_as2 1.0
+config.boundary_strength_as3 0 #1.5
+
+config.difference_of_gaussians1a 6.0
+config.difference_of_gaussians1b 0.8
+config.difference_of_gaussians2a 0 #3.0
+config.difference_of_gaussians2b 0.4
+
+config.laplace_of_gaussian1 0 #1.0
+config.laplace_of_gaussian2 0 #2.0
+config.laplace_of_gaussian3 0 #3.0
+
+config.abs_difference_of_gaussians1a 0 #6.0
+config.abs_difference_of_gaussians1b 0.8
+config.abs_difference_of_gaussians2a 0 #3.0
+config.abs_difference_of_gaussians2b 0.4
+
+#PARAMETERS FOR BOUNDARY-FEATURE CALCULATION
+#SET TO 0 MEANS THAT FEATURES ARE NOT INCLUDED    
+config.feature1 0
+config.feature2 0
+config.feature3 0
+config.feature4 0
+config.feature5 0
+config.curvature 1
+config.probmap 1
+config.arcsize 0
+config.region 1
+config.cross_section 0
+
+#PARAMETERS FOR BUBBLE EXTRACTION
+#THRESHOLDS (+ MEANS UPPER, - MEANS LOWER) FOR 
+#   GRAY VALUE      +
+#   REFLECTIONS     -
+#   GRAIN REMOVAL   -
+#   GRAIN REMOVAL   +
+#RADII FOR
+#   BUBBLE CLOSING
+#   GRAIN RECOGNITION
+config.bubble_gray_threshold 70
+config.bubble_reflection_threshold 160
+config.bubble_grain_lower 75
+config.bubble_grain_upper 130
+config.bubble_closing_radius 12
+config.bubble_grain_radius 10
