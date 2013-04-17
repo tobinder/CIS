@@ -219,6 +219,12 @@ int main(int argc, char *argv[])
     }
     else
     {
+        std::string test=argv[argc-1];
+        if (test == "-test")
+        {
+            return 0;
+        }
+
         int size=1;
         int rank=0;
 
