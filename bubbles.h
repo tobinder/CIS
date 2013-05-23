@@ -49,7 +49,7 @@
  * \param filepath_preproc_image Filepath to the preprocessed images (*.as and *.de)
  * \param param_file Name of the parameter file
  */
-void extract_bubbles(std::string filepath_orig_image, std::string filepath_preproc_image = "../preprocessing/out/", std::string param_file = "parameters.txt")
+void extract_bubbles(std::string filepath_orig_image, std::string filepath_preproc_image, std::string param_file = "parameters.txt")
 {
     //Load original image
     std::string filename_orig_image = get_filename(filepath_orig_image);

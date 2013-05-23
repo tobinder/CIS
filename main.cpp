@@ -1276,7 +1276,7 @@ int main(int argc, char *argv[])
            
                 std::cout << "Source Image: " << source_image_path << std::endl;
                 std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
-                extract_bubbles(source_image_path);
+                extract_bubbles(source_image_path,source_proc_image_path);
                 i++;
             }
         }
