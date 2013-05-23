@@ -1281,8 +1281,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        }
-
         /*
          * OPTION -bubbles-gui (gui version)
          */
