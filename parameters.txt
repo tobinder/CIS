@@ -135,17 +135,5 @@ config.region 1
 config.cross_section 0
 
 #PARAMETERS FOR BUBBLE EXTRACTION
-#THRESHOLDS (+ MEANS UPPER, - MEANS LOWER) FOR 
-#   GRAY VALUE      +
-#   REFLECTIONS     -
-#   GRAIN REMOVAL   -
-#   GRAIN REMOVAL   +
-#RADII FOR
-#   BUBBLE CLOSING
-#   GRAIN RECOGNITION
 config.bubble_gray_threshold 70
-config.bubble_reflection_threshold 160
-config.bubble_grain_lower 75
-config.bubble_grain_upper 130
-config.bubble_closing_radius 12
-config.bubble_grain_radius 10
+config.bubble_grain_lower 80
