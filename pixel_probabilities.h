@@ -347,16 +347,8 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
     FILE *info_bubbles;
     info_bubbles = fopen(fn_bubbles.c_str(), "rb");
 
-    //Set colours and bubble images
-    //Colour green
-    vigra::RGBValue<unsigned int> green;
-    green.setGreen(255);  
-
-    //Colour black
-    vigra::RGBValue<unsigned int> black;
-
-    vigra::BRGBImage bubbles(dim_x, dim_y);
-    vigra::BasicImage<bool> bubbles_bin(dim_x, dim_y);
+    //Load bubble image
+    vigra::BasicImage<bool> bubbles(dim_x, dim_y);
 
     bool bubble_img = false;
 
@@ -368,8 +360,7 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
         {
             for(int x = 0; x < dim_x; x++)
             {
-                bubbles(x,y) = 0;
-                bubbles_bin(x,y) = false;
+                bubbles(x,y) = false;
             }
         }
     }
@@ -380,20 +371,6 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
         importImage(info_b_image, destImage(bubbles));
         fclose(info_bubbles);
         bubble_img = true;
-        for(int y = 0; y < dim_y; y++)
-        {
-            for(int x = 0; x < dim_x; x++)
-            {
-                if(bubbles(x,y) == green)
-                {                
-                    bubbles_bin(x,y) = true;
-                }
-                else
-                {
-                    bubbles_bin(x,y) = false;
-                }
-            }
-        }
     }
 
     //if there is a threshold defined we set all pixels above the threshold to high
@@ -415,13 +392,13 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
     Parameter<int> gray_threshold;
     gray_threshold.assign("", "gray_threshold", 0);
     gray_threshold.load(paramFile,"config");
-
+/*
     //Add 2 to the gray threshold if there exists a bubble image
     if(bubble_img)
     {                
         gray_threshold = gray_threshold + 2;
     }
-
+*/
     //std::cout << "Parameter gray_threshold: " << gray_threshold << std::endl;
 
     Parameter<int> light_threshold;
@@ -764,7 +741,7 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                 {
                     for(int y = 0; y < dim_y; y++)
                     {
-                        if(bubbles_bin(x,y) == true)
+                        if(bubbles(x,y) == true)
                         {                
                             temp_img(x,y) = false;
                         }
@@ -776,9 +753,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                 {
                     for(int y = 0; y < dim_y; y++)
                     {
-                        if(bubbles_bin(x,y) == false && x+1 < dim_x)
+                        if(bubbles(x,y) == false && x+1 < dim_x)
                         {
-                            if(bubbles_bin(x+1,y) == true)
+                            if(bubbles(x+1,y) == true)
                             {
                                 temp_img(x+1,y) = true;
                                 temp_img_float2(x+1,y) = 5.0f;
@@ -803,9 +780,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                                 }
                             }
                         }
-                        if(bubbles_bin(x,y) == true && x+1 < dim_x)
+                        if(bubbles(x,y) == true && x+1 < dim_x)
                         {
-                            if(bubbles_bin(x+1,y) == false)
+                            if(bubbles(x+1,y) == false)
                             {
                                 temp_img(x,y) = true;
                                 temp_img_float2(x,y) = 5.0f;
@@ -838,9 +815,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                 {
                     for(int x = 0; x < dim_x; x++)
                     {
-                        if(bubbles_bin(x,y) == false && y+1 < dim_y)
+                        if(bubbles(x,y) == false && y+1 < dim_y)
                         {
-                            if(bubbles_bin(x,y+1) == true)
+                            if(bubbles(x,y+1) == true)
                             {
                                 temp_img(x,y+1) = true;
                                 temp_img_float2(x,y+1) = 5.0f;
@@ -865,9 +842,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                                 }
                             }
                         }
-                        if(bubbles_bin(x,y) == true && y+1 < dim_y)
+                        if(bubbles(x,y) == true && y+1 < dim_y)
                         {
-                            if(bubbles_bin(x,y+1) == false)
+                            if(bubbles(x,y+1) == false)
                             {
                                 temp_img(x,y) = true;
                                 temp_img_float2(x,y) = 5.0f;
@@ -1074,7 +1051,7 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                     int z=dim_x*y+x;
 
                     if (temp_img(x,y)==true && probability_image_0(x,y)==0.0f) ws_label(x,y)=0;
-                        else if (temp_img(x,y)==true)
+                    else if (temp_img(x,y)==true)
                     {
                         for(int feature=0;feature<nr_of_features;feature++)
                         {
@@ -1109,27 +1086,40 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
     }
     else//no threshold
     {
-        vigra::MultiArray<2, float> unknown_features(vigra::MultiArrayShape<2>::type(nr_of_pixel, nr_of_features),unknown_features_array);
-        for(int x=0;x<dim_x*dim_y;x++)
-        {
-            for(int y=0;y<nr_of_features;y++)
-            {
-            unknown_features(x,y)=unknown_features_array[nr_of_features*x+y];
-            }
-        }
-        vigra::MultiArray<2, double> unknown_probability(vigra::MultiArrayShape<2>::type(nr_of_pixel,2));
-
-        rf.predictProbabilities(unknown_features,unknown_probability);
+        std::cout<<"start parallelized prediction"<<std::endl;
 
         vigra::FImage probability_image_0(dim_x,dim_y);
 
-        for(int y=0;y<dim_y;y++)
+        #pragma omp parallel
         {
+            float * pixel_unknown_features_array=new float[nr_of_features];
+            vigra::MultiArray<2, float> pixel_unknown_features(vigra::MultiArrayShape<2>::type(1, nr_of_features),pixel_unknown_features_array);
+
+            #pragma omp for
             for(int x=0;x<dim_x;x++)
             {
-                probability_image_0(x,y)=(float)unknown_probability(dim_x*y+x,0);
+                for (int y=0;y<dim_y;y++)
+                {
+                    int z=dim_x*y+x;
+
+                    for(int feature=0;feature<nr_of_features;feature++)
+                    {
+                        pixel_unknown_features(0,feature)=unknown_features_array[nr_of_features*z+feature];
+                    }
+
+                    vigra::MultiArray<2, double> pixel_unknown_probability(vigra::MultiArrayShape<2>::type(1,2));
+
+                    rf.predictProbabilities(pixel_unknown_features,pixel_unknown_probability);
+
+                    probability_image_0(x,y)=(float)pixel_unknown_probability(0,0);
+                }
             }
-        }
+
+            delete pixel_unknown_features_array;  
+
+        }//end of parallelisation
+
+        std::cout<<"end parallelized prediction"<<std::endl;
 
         /* If there exists a bubble image, fill the bubble areas on the probability image
          * and draw their outlines on the watershed label image as well as the probability image.
@@ -1140,7 +1130,7 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
             {
                 for(int y = 0; y < dim_y; y++)
                 {
-                    if(bubbles_bin(x,y) == true)
+                    if(bubbles(x,y) == true)
                     {                
                         probability_image_0(x,y) = 1.0f;                       
                     }
@@ -1152,9 +1142,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
             {
                 for(int y = 0; y < dim_y; y++)
                 {
-                    if(bubbles_bin(x,y) == false && x+1 < dim_x)
+                    if(bubbles(x,y) == false && x+1 < dim_x)
                     {
-                        if(bubbles_bin(x+1,y) == true)
+                        if(bubbles(x+1,y) == true)
                         {
                             probability_image_0(x+1,y) = 0.0f;                            
                             if(x+2 < dim_x && y+1 < dim_y)
@@ -1169,9 +1159,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                             }
                         }
                     }
-                    if(bubbles_bin(x,y) == true && x+1 < dim_x)
+                    if(bubbles(x,y) == true && x+1 < dim_x)
                     {
-                        if(bubbles_bin(x+1,y) == false)
+                        if(bubbles(x+1,y) == false)
                         {
                             probability_image_0(x,y) = 0.0f;                    
                             if(x+1 < dim_x && y+1 < dim_y)
@@ -1194,9 +1184,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
             {
                 for(int x = 0; x < dim_x; x++)
                 {
-                    if(bubbles_bin(x,y) == false && y+1 < dim_y)
+                    if(bubbles(x,y) == false && y+1 < dim_y)
                     {
-                        if(bubbles_bin(x,y+1) == true)
+                        if(bubbles(x,y+1) == true)
                         {
                             probability_image_0(x,y+1) = 0.0f;                            
                             if(x+1 < dim_x && y+2 < dim_y)
@@ -1211,9 +1201,9 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                             }
                         }
                     }
-                    if(bubbles_bin(x,y) == true && y+1 < dim_y)
+                    if(bubbles(x,y) == true && y+1 < dim_y)
                     {
-                        if(bubbles_bin(x,y+1) == false)
+                        if(bubbles(x,y+1) == false)
                         {
                             probability_image_0(x,y) = 0.0f;                            
                             if(x+1 < dim_x && y+2 < dim_y)
@@ -1232,6 +1222,121 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
             }
         }
         exportImage(srcImageRange(probability_image_0), vigra::ImageExportInfo(dest_path_probability_maps.c_str()));
+
+        vigra::BasicImage<bool> temp_img(dim_x,dim_y);
+
+        if(bubble_img) std::cout<<"threshold on probability map, combine with bubble image"<<std::endl;
+        else std::cout<<"threshold on probability map"<<std::endl;
+
+     	for(int y=0;y<dim_y;y++)
+        {
+            for(int x=0;x<dim_x;x++)
+            {
+           		if(probability_image_0(x,y)<0.78f) temp_img(x,y)=true;//TODO
+                else temp_img(x,y)=false;
+            }
+        }
+
+        std::cout<<"find connected filtered pixels"<<std::endl;
+
+        vigra::IImage labels(dim_x,dim_y);
+        int nr_labels;
+
+        // find connected regions
+        nr_labels=vigra::labelImageWithBackground(srcImageRange(temp_img), destImage(labels), true, 0);
+
+        int * label_size=new int[nr_labels+1];
+        int * bubble_pixels=new int[nr_labels+1];
+
+        for(int i=0; i<nr_labels+1; i++)
+        {
+            label_size[i]=0;
+            bubble_pixels[i]=0;
+        }
+
+        for(int x=0;x<dim_x;x++)
+        {
+            for (int y=0;y<dim_y;y++)
+            {
+                label_size[labels(x,y)]++;
+                if (bubbles(x+1,y)) bubble_pixels[labels(x,y)]++;
+            }
+        }
+
+        for(int x=0;x<dim_x;x++)
+        {
+            for (int y=0;y<dim_y;y++)
+            {
+                if (label_size[labels(x,y)]<1000 && bubble_pixels[labels(x,y)]<100) temp_img(x,y)=false;
+                //if (label_size[labels(x,y)]<1000) std::cout<<bubble_pixels[labels(x,y)]<<std::endl;
+            }
+        }
+
+        delete label_size;
+
+        std::cout<<"close filtered pixels"<<std::endl;
+
+        vigra::FImage temp_img_float2(dim_x,dim_y);
+        int r=5;
+
+        //Copy from buffer
+        for(int i=0; i<temp_img.width(); i++)
+            for(int j=0; j<temp_img.height(); j++)
+            {
+                if (temp_img(i,j)==false) temp_img_float2(i,j) = 0.0f;
+                else temp_img_float2(i,j) = 5.0f;
+            }
+
+        vigra::FImage temp_img_float1(temp_img_float2);
+
+        // Disc Dilation with radius r
+        for(int i=0; i<temp_img.width(); i++)
+            for(int j=0; j<temp_img.height(); j++)
+                for(int k = -r; k<=r; k++)
+                    for(int l= -r; l<=r; l++)
+                    {
+                        if( k*k + l*l <= r*r )
+                        {
+                            if( k+i >= 0 && k+i < temp_img_float2.width() && j+l >=0 && j+l < temp_img_float2.height() )
+                            {
+                                if( temp_img_float2( k+i, j+l ) > temp_img_float1( i, j ) )
+                                    temp_img_float1( i, j) = temp_img_float2( k+i, j+l );
+                            }
+                        }
+                    }
+
+        //Copy from buffer
+        for(int i=0; i<temp_img.width(); i++)
+            for(int j=0; j<temp_img.height(); j++)
+                temp_img_float2(i,j) = temp_img_float1(i,j);
+
+        // Disc Erosion with radius r
+        for(int i=0; i<temp_img.width(); i++)
+            for(int j=0; j<temp_img.height(); j++)
+                for(int k = -r; k<=r; k++)
+                    for(int l= -r; l<=r; l++)
+                    {
+                        if( k*k + l*l <= r*r )
+                        {
+                            if( k+i >= 0 && k+i < temp_img_float2.width() && j+l >=0 && j+l < temp_img_float2.height() )
+                            {
+                                if( temp_img_float2( k+i, j+l ) < temp_img_float1( i, j ) )
+                                    temp_img_float1( i, j) = temp_img_float2( k+i, j+l );
+                            }
+                        }
+                    }
+
+        //Copy from buffer
+        for(int i=0; i<temp_img.width(); i++)
+            for(int j=0; j<temp_img.height(); j++)
+            {
+                if (temp_img_float1(i,j)>0.0f) temp_img(i,j) = 0;
+                else temp_img(i,j) = 1;
+            }
+
+        dest_path_probability_maps.resize(dest_path_probability_maps.size()-3);
+        dest_path_probability_maps.append("0.bmp");
+        exportImage(srcImageRange(temp_img), vigra::ImageExportInfo(dest_path_probability_maps.c_str()));
     }
 
     gettimeofday(&end, 0);

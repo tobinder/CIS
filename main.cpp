@@ -1267,12 +1267,20 @@ int main(int argc, char *argv[])
         else if(command_line_option == "-bubbles")
         {
             std::cout << "Option -bubbles" << std::endl;
-            std::string source_image_path = argv[argc-2];
             std::string source_proc_image_path = argv[argc-1];
+
+            int i=2;
+            while(i<argc-1)
+            {
+                std::string source_image_path = argv[i];
            
-            std::cout << "Source Image: " << source_image_path << std::endl;
-            std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
-            extract_bubbles(source_image_path);
+                std::cout << "Source Image: " << source_image_path << std::endl;
+                std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
+                extract_bubbles(source_image_path);
+                i++;
+            }
+        }
+
         }
 
         /*
@@ -1281,12 +1289,18 @@ int main(int argc, char *argv[])
         else if(command_line_option == "-bubbles-gui")
         {
             std::cout << "Option -bubbles" << std::endl;
-            std::string source_image_path = argv[argc-3];
             std::string source_proc_image_path = argv[argc-2];
+
+            int i=2;
+            while(i<argc-2)
+            {
+                std::string source_image_path = argv[i];
            
-            std::cout << "Source Image: " << source_image_path << std::endl;
-            std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
-            extract_bubbles(source_image_path,source_proc_image_path,argv[argc-1]);
+                std::cout << "Source Image: " << source_image_path << std::endl;
+                std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
+                extract_bubbles(source_image_path,source_proc_image_path,argv[argc-1]);
+                i++;
+            }
         }
 
         else
