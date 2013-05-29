@@ -49,7 +49,7 @@
  * \param filepath_preproc_image Filepath to the preprocessed images (*.as and *.de)
  * \param param_file Name of the parameter file
  */
-void extract_bubbles(std::string filepath_orig_image, std::string filepath_preproc_image, std::string param_file = "parameters.txt")
+void extract_bubbles(std::string filepath_orig_image, std::string filepath_preproc_image, bool firn, std::string param_file = "parameters.txt")
 {
     //Load original image
     std::string filename_orig_image = get_filename(filepath_orig_image);
@@ -129,28 +129,57 @@ void extract_bubbles(std::string filepath_orig_image, std::string filepath_prepr
 
     vigra::IImage label_image(dim_x,dim_y);
     vigra::labelImageWithBackground(vigra::srcImageRange(bubbles), vigra::destImage(label_image), false, 0);
-    int y_max=0;
+    std::vector<int> x_border;
+    std::vector<int> y_border;
 
     //if background is labeled as circle, divide border region
     if(label_image(0,0)==label_image(dim_x-1,0) && label_image(0,0)==label_image(0,dim_y-1) && label_image(0,0)==label_image(dim_x-1,dim_y-1))
-    {                
+    {
         std::cout<<"connected background identified"<<std::endl;
-
-        int y=0;
-        while (label_image(dim_x/2,y)==label_image(0,0))
+        
+        if(firn) //connectivity is given even inside the the section (firn)
         {
-            bubbles(dim_x/2,y) = false;
-            y++;
-            y_max=y;
+            for (int x=0; x<dim_x; x++)
+                for (int y=0; y<dim_y; y++)
+                {
+                    if (label_image(x,y)==label_image(0,0))
+                    {
+                        bubbles(x,y) = false;
+                        x_border.push_back(x);
+                        y_border.push_back(y);
+                    }
+                }
+        }
+        else //connectivity is given only along the border
+        {
+            for (int y=0; y<dim_y; y++)
+            {
+                if(label_image(dim_x/2,y)==label_image(0,0))
+                {
+                    bubbles(dim_x/2,y) = false;
+                    y_border.push_back(y);
+                }
+                else break;
+            }
         }
     }
 
     //fill inside of bubbles
     vigra::extendedLocalMinima(vigra::srcImageRange(bubbles),vigra::destImage(bubbles));
 
-    for (int y=0; y<y_max; y++)
+    if (firn)
     {
-        bubbles(dim_x/2,y) = true;
+        for (int p=0; p<y_border.size(); p++)
+        {
+            bubbles(x_border[p],y_border[p]) = true;
+        }
+    }
+    else
+    {
+        for (int p=0; p<y_border.size(); p++)
+        {
+            bubbles(dim_x/2,y_border[p]) = true;
+        }
     }
 
     //Export the image

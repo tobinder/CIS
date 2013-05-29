@@ -1269,6 +1269,12 @@ int main(int argc, char *argv[])
             std::cout << "Option -bubbles" << std::endl;
             std::string source_proc_image_path = argv[argc-1];
 
+            bool firn=false;
+            std::cout<<"Are bubbles closed off? Press 'n' for firn or 'y' for ice: ";
+            std::string in;
+            std::cin >> in;
+            if(in=="n") firn=true;
+
             int i=2;
             while(i<argc-1)
             {
@@ -1276,7 +1282,7 @@ int main(int argc, char *argv[])
            
                 std::cout << "Source Image: " << source_image_path << std::endl;
                 std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
-                extract_bubbles(source_image_path,source_proc_image_path);
+                extract_bubbles(source_image_path,source_proc_image_path,firn);
                 i++;
             }
         }
@@ -1287,16 +1293,19 @@ int main(int argc, char *argv[])
         else if(command_line_option == "-bubbles-gui")
         {
             std::cout << "Option -bubbles" << std::endl;
-            std::string source_proc_image_path = argv[argc-2];
+            std::string source_proc_image_path = argv[argc-3];
+
+            bool firn=false;
+            if (atoi(argv[argc-1])==1) firn = true;
 
             int i=2;
-            while(i<argc-2)
+            while(i<argc-3)
             {
                 std::string source_image_path = argv[i];
            
                 std::cout << "Source Image: " << source_image_path << std::endl;
                 std::cout << "Preprocessed Image: " << source_proc_image_path << std::endl;
-                extract_bubbles(source_image_path,source_proc_image_path,argv[argc-1]);
+                extract_bubbles(source_image_path,source_proc_image_path,firn,argv[argc-2]);
                 i++;
             }
         }
