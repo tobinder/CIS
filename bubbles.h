@@ -127,8 +127,31 @@ void extract_bubbles(std::string filepath_orig_image, std::string filepath_prepr
         }
     }
 
+    vigra::IImage label_image(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(bubbles), vigra::destImage(label_image), false, 0);
+    int y_max=0;
+
+    //if background is labeled as circle, divide border region
+    if(label_image(0,0)==label_image(dim_x-1,0) && label_image(0,0)==label_image(0,dim_y-1) && label_image(0,0)==label_image(dim_x-1,dim_y-1))
+    {                
+        std::cout<<"connected background identified"<<std::endl;
+
+        int y=0;
+        while (label_image(dim_x/2,y)==label_image(0,0))
+        {
+            bubbles(dim_x/2,y) = false;
+            y++;
+            y_max=y;
+        }
+    }
+
     //fill inside of bubbles
     vigra::extendedLocalMinima(vigra::srcImageRange(bubbles),vigra::destImage(bubbles));
+
+    for (int y=0; y<y_max; y++)
+    {
+        bubbles(dim_x/2,y) = true;
+    }
 
     //Export the image
     exportImage(srcImageRange(bubbles), vigra::ImageExportInfo(filepath_bubbl_image.c_str()));
