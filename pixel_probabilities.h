@@ -429,7 +429,12 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
     FILE *fp_unknown_features;
     fp_unknown_features =fopen(filepath_to_feature_files.c_str(),"rb");
     //create an array
-    float * unknown_features_array=new float[nr_of_pixel*nr_of_features];
+    //float * unknown_features_array=new float[nr_of_pixel*nr_of_features];
+    float **unknown_features_array = new float*[nr_of_features];
+    for(int feature=0;feature<nr_of_features;feature++)
+    {
+        unknown_features_array[feature] = new float[nr_of_pixel];
+    }
 
     if(fp_unknown_features==NULL)
     {
@@ -455,7 +460,8 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
 
                 for(int feature=0;feature<nr_of_features;feature++)
                 {
-                    unknown_features_array[nr_of_features*z+feature]=array[nr_of_features*y+feature];
+                    //unknown_features_array[nr_of_features*z+feature]=array[nr_of_features*y+feature];
+                    unknown_features_array[feature][z]=array[nr_of_features*y+feature];
                 }
             }
 
@@ -464,9 +470,16 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
     
         for(size_t jj=0;jj<nr_of_pixel*nr_of_features;jj++)
         {
-            if (std::isnan(unknown_features_array[jj]))
+            //if (std::isnan(unknown_features_array[jj]))
+            //{
+            //    unknown_features_array[jj] = 0;
+            //}
+            for(int feature=0;feature<nr_of_features;feature++)
             {
-                unknown_features_array[jj] = 0;
+                if (std::isnan(unknown_features_array[feature][jj]))
+                {
+                    unknown_features_array[feature][jj] = 0;
+                }
             }
         }
     }
@@ -1055,7 +1068,8 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
                     {
                         for(int feature=0;feature<nr_of_features;feature++)
                         {
-                            pixel_unknown_features(0,feature)=unknown_features_array[nr_of_features*z+feature];
+                            //pixel_unknown_features(0,feature)=unknown_features_array[nr_of_features*z+feature];
+                            pixel_unknown_features(0,feature)=unknown_features_array[feature][z];
                         }
 
                         vigra::MultiArray<2, double> pixel_unknown_probability(vigra::MultiArrayShape<2>::type(1,2));
@@ -1104,7 +1118,8 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
 
                     for(int feature=0;feature<nr_of_features;feature++)
                     {
-                        pixel_unknown_features(0,feature)=unknown_features_array[nr_of_features*z+feature];
+                        //pixel_unknown_features(0,feature)=unknown_features_array[nr_of_features*z+feature];
+                        pixel_unknown_features(0,feature)=unknown_features_array[feature][z];
                     }
 
                     vigra::MultiArray<2, double> pixel_unknown_probability(vigra::MultiArrayShape<2>::type(1,2));
@@ -1359,5 +1374,10 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
 
     std::cout<<"....done"<<std::endl;
 
-    delete unknown_features_array;
+    //delete unknown_features_array;
+    for(int feature=0;feature<nr_of_features;feature++)
+    {
+        delete [] unknown_features_array[feature];
+    }
+    delete [] unknown_features_array;
 }
