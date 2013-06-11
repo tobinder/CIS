@@ -133,7 +133,8 @@ void extract_bubbles(std::string filepath_orig_image, std::string filepath_prepr
     std::vector<int> y_border;
 
     //if background is labeled as circle, divide border region
-    if(label_image(0,0)==label_image(dim_x-1,0) && label_image(0,0)==label_image(0,dim_y-1) && label_image(0,0)==label_image(dim_x-1,dim_y-1))
+    if(label_image(0,0)==label_image(dim_x-1,0) && label_image(0,0)==label_image(0,dim_y-1) &&
+        label_image(0,0)==label_image(dim_x-1,dim_y-1) && label_image(0,0)==true)
     {
         std::cout<<"connected background identified"<<std::endl;
         
