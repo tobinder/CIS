@@ -468,7 +468,8 @@ void extract_pixel_probabilities(std::string fn,std::string path_to_feature_file
             delete array;
         }
     
-        for(size_t jj=0;jj<nr_of_pixel*nr_of_features;jj++)
+        //for(size_t jj=0;jj<nr_of_pixel*nr_of_features;jj++)
+        for(size_t jj=0;jj<nr_of_pixel;jj++)
         {
             //if (std::isnan(unknown_features_array[jj]))
             //{
