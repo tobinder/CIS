@@ -684,11 +684,28 @@ int main(int argc, char *argv[])
 
             int equalTolerance=1;
 
-            while(i<argc-1)
+            /*while(i<argc-1)
             {
                 std::cout<<"nr: "<<i-1<<" of " <<argc-3<<std::endl;
                 std::string source_image_path=argv[i];
                 compute_watershed_regions_binary(source_image_path,dest_image_path,equalTolerance,size,rank);
+                i++;
+            }*/
+            while(i < argc-1)
+            {
+                std::cout << "nr: " << i-1 << " of " << argc-3 << std::endl;
+                std::string source_image_path = argv[i];
+                
+                //Check if image is grayscale or color
+                vigra::ImageImportInfo info(source_image_path.c_str());
+                if(info.isGrayscale())
+                {
+                    compute_watershed_regions_binary(source_image_path,dest_image_path,equalTolerance,size,rank);
+                }
+                else
+                {
+                    compute_watershed_regions_binary_color(source_image_path,dest_image_path,equalTolerance,size,rank);                    
+                }
                 i++;
             }
         }

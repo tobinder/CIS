@@ -55,6 +55,9 @@
 #include "CImg.h"
 #include <omp.h>
 
+//Used for handling colors
+#include <vigra/rgbvalue.hxx>
+
 using namespace cimg_library;
 #undef min
 #undef max
@@ -587,16 +590,23 @@ void compute_watershed_regions(std::string source_image_path,std::string dest_im
  * \param rank Rank
  */
 //Watershed-segmentation from manually generated binary map
-void compute_watershed_regions_binary(std::string source_image_path,std::string dest_image_path,int equalTolerance, int size, int rank)
+void compute_watershed_regions_binary(std::string source_image_path,std::string dest_image_path,int equalTolerance, int size, int rank, vigra::IImage* converted_source_image = NULL, bool converted_source_image_available = false)
 {
     std::cout<<"Compute Watershed Segmentation from manually generated image: "<<get_filename(source_image_path)<<std::endl;
-
     vigra::ImageImportInfo info(source_image_path.c_str());
     int dim_x = info.width();
     int dim_y = info.height();
 
     vigra::IImage labels_img(dim_x, dim_y);
-    importImage(info, destImage(labels_img));
+    if(converted_source_image_available == false)
+    {
+        importImage(info, destImage(labels_img));
+    }
+    else
+    {
+        labels_img = *converted_source_image;
+        delete converted_source_image;
+    }
 
     vigra::BImage in(dim_x, dim_y);
     transformImage(srcImageRange(labels_img), destImage(in), vigra::linearIntensityTransform(-1, -255));
@@ -717,4 +727,121 @@ void compute_watershed_regions_binary(std::string source_image_path,std::string 
     dest_cgp_path.resize(dest_cgp_path.size()-3);
 
     compute_and_save_cgp_data_structure(dest_cgp_path,size,rank);
+}
+
+void compute_watershed_regions_binary_color(std::string source_image_path, std::string dest_image_path,int equalTolerance, int size, int rank)
+{
+    vigra::ImageImportInfo info(source_image_path.c_str());
+    int dim_x = info.width();
+    int dim_y = info.height();
+
+    vigra::BRGBImage source_image(dim_x, dim_y);
+    importImage(info, destImage(source_image));
+
+    //Might be implemented later; check if the image has a border drawn with the segmentation color. If it has one, use the first labeling image, if not, use the second one. Problem: images with boundaries that do not exceed the image border.
+    bool hasBorder = true;
+
+    //Image containing the grayscale version of the segmentation
+    vigra::IImage * gScaleImage = new vigra::IImage(dim_x, dim_y);
+    //vigra::IImage gScaleImage(dim_x, dim_y);
+
+    int totalPixelNumber = dim_x*dim_y;
+
+    //Vector containing all available colors. Must not contain more than two
+    std::vector<vigra::RGBValue<int, 0, 1, 2> > source_image_colors;
+    std::vector<int> source_image_colors_pixels;
+    //source_image_colors_pixels.push_back(0);
+    //A rather crafty and resource intensive approach. Can be simplified if we assume that the image is garuanteed to contain exactly two colors.
+    bool doNotInsert = false;
+
+    for(int x = 0; x < dim_x; x++)
+    {
+        for(int y = 0; y < dim_y; y++)
+        {
+            //Make the grayscale image white
+            (*gScaleImage)(x,y) = 255;
+            //Get the color value for the pixel and check if it is already in the color vector. Count the instances of this color
+            doNotInsert = false;
+            vigra::RGBValue<int, 0, 1, 2> xyColor = source_image(x,y);
+            for(int i = 0; i < source_image_colors.size(); i++)
+            {
+                if(xyColor.red() == source_image_colors[i].red() && xyColor.green() == source_image_colors[i].green() && xyColor.blue() == source_image_colors[i].blue())
+                {
+                    source_image_colors_pixels[i]++;
+                    doNotInsert = true;
+                    break;
+                }
+            }
+            if(doNotInsert == false)
+            {
+                source_image_colors.push_back(xyColor);
+                source_image_colors_pixels.push_back(1);
+            }
+        }
+    }
+
+    //Abort if the image does not contain two colors
+    if(source_image_colors.size() != 2) {
+        std::cout << "Error: image does not contain two colors!" << std::endl;
+        return;
+    }
+
+    std::vector<float> source_image_colors_perc;
+    //Print out the image's colors and their percentage within the image
+    std::cout << "Image colors (R, G, B):" << "\n";
+    for(int i = 0; i < source_image_colors.size(); i++)
+    {
+        float iPerc = (float)source_image_colors_pixels[i]/(float)totalPixelNumber;
+        source_image_colors_perc.push_back(iPerc);
+        std::cout << "(" << source_image_colors[i].red() << ", " << source_image_colors[i].green() << ", "<< source_image_colors[i].blue() << "), Percentage = " << iPerc << "\n";
+    }
+    std::cout << std::endl;
+    
+    vigra::RGBValue<int, 0, 1, 2> segmentation_color;
+
+    //Take the color with the lowest percentage. This *should* be the color used for the segmentation
+    if(source_image_colors_perc[0] <= source_image_colors_perc[1])
+    {
+        segmentation_color = source_image_colors[0];
+    }
+    else
+    {
+        segmentation_color = source_image_colors[1];
+    }
+    std::cout << "Using (" << segmentation_color.red() << ", " << segmentation_color.green() << ", "<< segmentation_color.blue() << ") as segmentation color" << std::endl;
+
+    //Paint the grayscale image
+    for(int x = 0; x < dim_x; x++)
+    {
+        for(int y = 0; y < dim_y; y++)
+        {
+            if(source_image(x,y) == segmentation_color)
+            {
+                (*gScaleImage)(x,y) = 0;
+            }
+        }
+    }
+
+    //Find out which color is marking the grains and which is marking the boundaries. Grains will be disconnected, so we will use this fact as a criterion.
+    //Use Vigra's label image feature to label disjoint areas within the image.
+    vigra::IImage label_image0(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image0), true, source_image_colors[0]);
+
+    vigra::IImage label_image1(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image1), true, source_image_colors[1]);
+
+    /*vigra::IImage label_image2(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image2), false, source_image_colors[0]);
+
+    vigra::IImage label_image3(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image3), false, source_image_colors[1]);*/
+
+    //export the label image
+    /*exportImage(srcImageRange(label_image0), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label0.bmp"));
+    exportImage(srcImageRange(label_image1), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label1.bmp"));*/
+    /*exportImage(srcImageRange(label_image2), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label2.bmp"));
+    exportImage(srcImageRange(label_image3), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label3.bmp"));*/
+    exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_gScale.bmp"));
+
+    compute_watershed_regions_binary(source_image_path, dest_image_path, equalTolerance, size, rank, gScaleImage, true);
 }
