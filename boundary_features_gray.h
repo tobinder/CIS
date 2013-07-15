@@ -626,7 +626,7 @@ void boundary_features_gray(std::string source_path_image,
            point p;
            p.x=x;
            p.y=y;
-
+           
            if (ws_region_image(x,y)>nr_areas)
            {
                nr_areas=ws_region_image(x,y);
@@ -701,7 +701,7 @@ void boundary_features_gray(std::string source_path_image,
  
     if (probmap==true)//only if needed
     {
-        std::string filepath_to_prob_map=source_path_prob_map;
+        std::string filepath_to_prob_map=source_path_prob_map;        
         std::string image_filename=get_filename(source_path_image);
         filepath_to_prob_map.append(image_filename);
         filepath_to_image.resize(filepath_to_image.size()-4);
@@ -806,7 +806,7 @@ void boundary_features_gray(std::string source_path_image,
 	Parameter<bool> feature5;
 	feature5.assign("", "feature5", true);
     feature5.load(paramFile,"config");
- 
+
     if (feature1==true || feature2==true || feature3==true || feature4==true || feature5==true)//only if needed
     {
         //now we load the feature file
