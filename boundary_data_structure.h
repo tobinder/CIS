@@ -53,15 +53,14 @@ struct point
     int y; /**< y-coordinate */
 };
 
-/*! \fn calculatePhi(std::vector<point>* list, std::vector<float>* phi, int numSmoothing)
+/*! \fn calculatePhi(std::vector<point>* list, std::vector<float>* phi)
  * \brief Calculate from a list of points the angle of each point's normal.
  * \param list List of points
  * \param phi Vector the angle information is written into
- * \param numSmoothing No use?
  */
 // Berechne aus einer parametrisierten Kurve (in form von Punkten in einer Liste) den Winkel
 // der lokalen Normalen für jeden Kurvenpunkt
-void calculatePhi(std::vector<point>* list, std::vector<float>* phi, int numSmoothing)
+void calculatePhi(std::vector<point>* list, std::vector<float>* phi)
 {
     int precision=2;//combine two pixels to one pixel
 

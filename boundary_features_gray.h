@@ -747,7 +747,7 @@ void boundary_features_gray(std::string source_path_image,
             else
             {
                 //std::cout << "Long arc... " << arcs[i].size() << " ";
-                calculatePhi( &(arcs[i]), &(phis[i]), 15 );
+                calculatePhi( &(arcs[i]), &(phis[i]));
                 //std::cout << "done!"<<std::endl;
             }
         }
