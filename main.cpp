@@ -101,66 +101,6 @@
  * necessary to use it for two-dimensional data. It has been developed in the HCI. Note that SVN rights are required for web-access.
  * - <a href="http://www.boost.org/">Boost</a> is a free library consisting of a multitude of portable sublibraries, which serve a number of tasks. The library <B>Boost</B>.MPI enables parallelisation of GCP-computations.
  * - <a href="http://www.hdfgroup.org/">HDF5</a> is a data format used for storing scientific data efficiently and flexible. It is used for random forests at the moment, but further data can be integrated.
- * 
- * \section basicTerms Basic Terms and Definitions
- * Images should be in the Bitmap (*.bmp) format.
- * - \b Watershed: the deepest point of an uneven map are filled with water. Upon conjunction, the borders of the watersheds remain. These are called arcs.
- * - \b Arc: border of the watershed.
- * - \b Boundary/Segment: connected arcs after artefact removal.
- * - \b Junction: concourse of multiple arcs.
- * - \b Class: a class is assigned to the edges of an image. Thus, the grain and subgrain boundaries as well as bubbles are different classes. Pixels belong to the first level, arcs to the second level.
- * - \b Feature: The choice of features is done in the parameter file.
- * 
- * \section dataStructures Data Structures
- * \subsection dataStructures_hdf5 HDF5 Structures
- * To save all obtained structures, the hierarchic data format \b HDF5 was chosen. It enables the storage of a multitude of data structures in a single file. Programs
- * like \b Matlab can read from <B>HDF5</B>-files directly.
- * The tool <a href="http://www.hdfgroup.org/hdf-java-html/hdfview/">HDFView</a> enables viewing and editing of <B>HDF4</B>- and <B>HDF5</B>-files. \b HDFView is available for Windows, Linux and Mac operating systems. In \b HDFView, data sets
- * can be copied into the clipboard or exported as text files.
- * Analogous to the processing of microstructure images, there are three data structures, which build on one another:
- * - \b Segmentation
- * - \b Grain-Boundary-Network
- * - \b Network-Parameters
- * 
- * Note that only the \b Segmentation data structure is part of the \b CIS, and thus will be the only structure explained in detail in this code manual. The \b Grain-Boundary-Network
- * as well as the \b Network-Parameters data structures are part of \b IceGrain. For further information about the two data structures, please refer to the \b IceGrain
- * code manual.
- * 
- * \subsubsection dataStructures_hdf5_seg Segmentation
- * The file <tt>pixel-classification/watershed-segmentation/*.bmp.h5</tt> stores the corresponding area index of each pixel of the image. Pixels with equal area index form an area.
- * \image html hdf5_seg_1.png "Figure 1: Areas of the segmentation"
- * In <B>figure 1</B>, the areas 15, 54 and 60 are visible. The file <tt>pixel-classification/watershed-segmentation/*.bmp.objects.h5</tt> stores the structure of the segmentation's edges and node points.
- * The data set "neighbourhood-2" of the ".objects" file describes the neighbourhood of the edges. The entry in the second column (marked with 1) represents the edge
- * between the areas 15 and 60. This second edge is an entry in the second column of the data set "neighbourhood-1", representing the second node point. 
- * The coordinates of the node points can be identified through the group "1-sets": the data set "bin-2/2-1" can be seen in <B>figure 2</B> on the lower left-hand side.
- * The first line corresponds to the double value of the y-coordinate, the second line corresponds to the double value of the x-coordinate. Analogous, the data set
- * "bin-2/2-1" of the group "2-sets" (lower right-hand side in <B>figure 2</B>) describes all coordinates of edges between the areas 15 and 60.
- * \image html hdf5_seg_2.png "Figure 2: Objects of the segmentation"
- * 
- * \subsection dataStructures_parameterFile Parameter file
- * The file <tt>parameters.txt</tt> is called the <B>parameter file</B>. It contains a multitude of parameters used by the <B>CIS</B> tool. All paramteres start with
- * <tt>config.*</tt> followed by a space character and a value. Only the most important parameters are described in detail here.
- * - <tt>config.path_*</tt> and <tt>config.filepath_*</tt> are the paths to the corresponding folders. These are only used in composite functions.
- * - <tt>config.nr_of_trees</tt> is the number of trees used for the random forest.
- * - <tt>config.gray_threshold</tt> is set to 0 by default, which means there is no threshold. If the value is between 0.1 and 10, the threshold is adaptively calculated
- * for each image using the specified value. If the value is above 10, the threshold will be fixed for all images. In both cases, only values beneath the threshold are taken
- * into consideration.
- * - <tt>config.light_threshold</tt> is set to 0 by default, which means there is no threshold. If a value other than 0 is set, all gray values above the threshold are taken
- * into consideration.
- * - <tt>config.threshold</tt> states, that all pixels with an edge-probability below the threshold are to be classified as non-edge.
- * - <tt>config.equal_tolerance</tt> defines the highest possible difference between the pixel's gray values.
- * - <tt>config.scale</tt> defines the Sigma of the Gaussian smoothing.
- * - <tt>config.blocksize</tt> is the size of the blocks used to determine the image borders.
- * - <tt>config.grayvalue_difference</tt> is the maximum difference of gray values indicating an image border.
- * - <tt>config.gradient_magnitude</tt> and the parameters below in the <B>parameter file</B> are features for the pixel feature calculation. If a feature is set to 0,
- * it is not included in the calculation. If any value above 0 is chosen, the feature will be included in the calculation using the given value.
- * - <tt>config.feature*</tt> and the parameters below in the <B>parameter file</B> are features for the boundary feature calculation. A feature can only be set to 0 (not included
- * in the calculation) or 1 (included in the calculation). 
- * 
- * \subsection dataStructures_datFiles *.dat files
- * - <tt>*.bmp.dat</tt> contains the training data defined via the graphical user interface, where <tt>*</tt> is the filename of an image. It uses the format <tt>x-coordinate y-coordinate class</tt>.
- * - <tt>info.dat</tt> contains the number of used features and training points.
- * - <tt>selection.dat</tt> contains the values found by the search for the image border.
  */
 #include <cgp/cgp_config.hxx>
 
