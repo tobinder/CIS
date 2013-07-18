@@ -129,6 +129,8 @@ namespace std
 }
 
 const int nr_of_classes=3;
+//Static class attribute 
+std::string ParameterFile::filepath = "";
 
 #include "ParameteredObject.hxx"
 

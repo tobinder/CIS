@@ -1,6 +1,4 @@
-/*! \file ParameterFile.hxx
- */ 
-// CIS: Random forest based segmentation project
+// IceGrain: Extraction and parameterization of grain boundary networks of ice
 //
 // Copyright (c) 2013 Tobias Binder.
 // 
@@ -17,7 +15,7 @@
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // - All advertising materials mentioning features or use of this software must 
-//   display the following acknowledgement: ``This product includes the CIS
+//   display the following acknowledgement: ``This product includes the IceGrain
 //   package developed by Tobias Binder and others''.
 // - The name of the author must not be used to endorse or promote products 
 //   derived from this software without specific prior written permission.
@@ -75,6 +73,7 @@ private:
 public:
 	ParameterFile(void) : noFoundWarnings(false), convertSlashes(true), delimiter(';') {}
 	ParameterFile(std::string fileName) : noFoundWarnings(false), convertSlashes(true), delimiter(';') {load(fileName);}
+	static std::string filepath;
 	~ParameterFile(void) {}
 
 	void setDelimiter(char delimiter)
@@ -263,6 +262,7 @@ public:
 			clear();
 			fromStream(file);
 			file.close();
+			filepath = fileName;
 			return true;
 		}
 	}
@@ -345,8 +345,6 @@ public:
 			}
 		}
 	}
-
-
 };
 
 template <> inline void ParameterFile::set(std::string parameter, std::string value)
