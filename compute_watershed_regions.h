@@ -78,6 +78,15 @@ template <class T> struct EqualWithToleranceFunctor
     T t;
 };
 
+struct fourIntTuple
+{
+    int c1;
+    int c2;
+    int c3;
+    int c4;
+    int c5;
+};
+
 /*! \fn compute_ws_regions(std::string source_image_filepath,std::string preprocessed_probmap_filepath,std::string dest_image_path,int limit,int equalTolerance)
  * \brief Watershed segmentation with given preprocessed image.
  * \param source_image_filepath Filepath to the source image
@@ -87,7 +96,7 @@ template <class T> struct EqualWithToleranceFunctor
  * \param equalTolerance Equal tolerance functor
  */
 //Exports the watershed segmentation to a hdf5 file
-void export_ws_hdf5(std::string &dest_path, unsigned int** ws_image, int dim_x, int dim_y)
+void export_ws_hdf5(std::string &dest_path, unsigned int** ws_image, int dim_x, int dim_y, bool pathSet = true)
 {
     //EXPORT SEGMENTATION TO A HDF5 file
     dest_path.append(".h5");
@@ -137,108 +146,110 @@ void export_ws_hdf5(std::string &dest_path, unsigned int** ws_image, int dim_x, 
 
         delete row_values;
     }
-
+    if(pathSet == true)
     {
-        //Create group Parameters
-        hid_t group_id = H5Gcreate1(file_save, "/Parameters", 0);
+        {
+            //Create group Parameters
+            hid_t group_id = H5Gcreate1(file_save, "/Parameters", 0);
 
-        std::cout << "Loading parameter file from: " << ParameterFile::filepath;
-        ParameterFile paramFile;
-        paramFile.load(ParameterFile::filepath);
-        
-        //Write the parameters into the group
-        Parameter<std::string>::writeParamToHDF5("filepath_default_pixel_rf", "", group_id, &paramFile);
-       
-        Parameter<float>::writeParamToHDF5("gray_threshold", (float)0.51, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("light_threshold", (float)131, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("feature_threshold", (float)0.01, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("no_boundary_probability", (float)0.951, group_id, &paramFile);
+            std::cout << "Loading parameter file from: " << ParameterFile::filepath;
+            ParameterFile paramFile;
+            paramFile.load(ParameterFile::filepath);
+            
+            //Write the parameters into the group
+            Parameter<std::string>::writeParamToHDF5("filepath_default_pixel_rf", "", group_id, &paramFile);
+           
+            Parameter<float>::writeParamToHDF5("gray_threshold", (float)0.51, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("light_threshold", (float)131, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("feature_threshold", (float)0.01, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("no_boundary_probability", (float)0.951, group_id, &paramFile);
 
-        Parameter<int>::writeParamToHDF5("threshold", 26, group_id, &paramFile);
-        Parameter<int>::writeParamToHDF5("scale", 1, group_id, &paramFile);
-        Parameter<int>::writeParamToHDF5("equal_tolerance", 1, group_id, &paramFile);
-        
-        Parameter<int>::writeParamToHDF5("blocksize", 100, group_id, &paramFile);
-        Parameter<int>::writeParamToHDF5("grayvalue_difference", 300, group_id, &paramFile);
-        
-        Parameter<std::string>::writeParamToHDF5("grayvalue", "false", group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("gradient_magnitude1", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("gradient_magnitude2", (float)1.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("gradient_magnitude3", (float)3.0, group_id, &paramFile);
+            Parameter<int>::writeParamToHDF5("threshold", 26, group_id, &paramFile);
+            Parameter<int>::writeParamToHDF5("scale", 1, group_id, &paramFile);
+            Parameter<int>::writeParamToHDF5("equal_tolerance", 1, group_id, &paramFile);
+            
+            Parameter<int>::writeParamToHDF5("blocksize", 100, group_id, &paramFile);
+            Parameter<int>::writeParamToHDF5("grayvalue_difference", 300, group_id, &paramFile);
+            
+            Parameter<std::string>::writeParamToHDF5("grayvalue", "false", group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("gradient_magnitude1", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("gradient_magnitude2", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("gradient_magnitude3", (float)3.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor1a", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor1b", (float)0.6, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure1", (float)0.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor1a", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor1b", (float)0.6, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure1", (float)0.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor2a", (float)1.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor2b", (float)0.9, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure2", (float)0.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor3a", (float)2.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor3b", (float)1.2, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure3", (float)0.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix1", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian1", (float)0.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix2", (float)1.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian2", (float)0.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor2a", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor2b", (float)0.9, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure2", (float)0.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor3a", (float)2.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor3b", (float)1.2, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure3", (float)0.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix1", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian1", (float)0.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix2", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian2", (float)0.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix3", (float)2.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian3", (float)0.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_boundary_strength1", (float)0.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_boundary_strength2", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_boundary_strength3", (float)1.5, group_id, &paramFile);
-        
-        Parameter<std::string>::writeParamToHDF5("grayvalue_as", "false", group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("gradient_magnitude_as1", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("gradient_magnitude_as2", (float)1.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("gradient_magnitude_as3", (float)3.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as1a", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as1b", (float)0.6, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_as1", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix3", (float)2.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian3", (float)0.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_boundary_strength1", (float)0.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_boundary_strength2", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_boundary_strength3", (float)1.5, group_id, &paramFile);
+            
+            Parameter<std::string>::writeParamToHDF5("grayvalue_as", "false", group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("gradient_magnitude_as1", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("gradient_magnitude_as2", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("gradient_magnitude_as3", (float)3.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as1a", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as1b", (float)0.6, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_as1", (float)1.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as2a", (float)1.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as2b", (float)0.9, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_as2", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as2a", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as2b", (float)0.9, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_as2", (float)1.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as3a", (float)2.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as3b", (float)1.2, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_structure_as3", (float)1.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix_as1", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_as1", (float)1.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix_as2", (float)1.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_as2", (float)1.0, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix_as3", (float)3.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("eigenvalues_hessian_as3", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as3a", (float)2.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_tensor_as3b", (float)1.2, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_structure_as3", (float)1.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix_as1", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_as1", (float)1.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix_as2", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_as2", (float)1.0, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_matrix_as3", (float)3.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("eigenvalues_hessian_as3", (float)1.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("boundary_strength_as1", (float)0.5, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("boundary_strength_as2", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("boundary_strength_as3", (float)1.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("boundary_strength_as1", (float)0.5, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("boundary_strength_as2", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("boundary_strength_as3", (float)1.5, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("difference_of_gaussians1a", (float)6.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("difference_of_gaussians1b", (float)0.8, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("difference_of_gaussians2a", (float)3.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("difference_of_gaussians2b", (float)0.4, group_id, &paramFile);
-        
-        Parameter<float>::writeParamToHDF5("laplace_of_gaussian1", (float)1.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("laplace_of_gaussian2", (float)2.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("laplace_of_gaussian3", (float)3.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("difference_of_gaussians1a", (float)6.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("difference_of_gaussians1b", (float)0.8, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("difference_of_gaussians2a", (float)3.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("difference_of_gaussians2b", (float)0.4, group_id, &paramFile);
+            
+            Parameter<float>::writeParamToHDF5("laplace_of_gaussian1", (float)1.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("laplace_of_gaussian2", (float)2.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("laplace_of_gaussian3", (float)3.0, group_id, &paramFile);
 
-        Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians1a", (float)6.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians1b", (float)0.8, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians2a", (float)3.0, group_id, &paramFile);
-        Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians2b", (float)0.4, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians1a", (float)6.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians1b", (float)0.8, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians2a", (float)3.0, group_id, &paramFile);
+            Parameter<float>::writeParamToHDF5("abs_difference_of_gaussians2b", (float)0.4, group_id, &paramFile);
 
-        //Close the group
-        H5Gclose(group_id);
+            //Close the group
+            H5Gclose(group_id);
 
+        }
     }
 
     H5Sclose(mdataspace_id);
@@ -903,7 +914,7 @@ void compute_watershed_regions_binary(std::string source_image_path,std::string 
 
     std::cout<<"File closed"<<std::endl;*/
 
-    export_ws_hdf5(dest_path, ws_image, dim_x, dim_y);
+    export_ws_hdf5(dest_path, ws_image, dim_x, dim_y, false);
 
     std::string dest_cgp_path=dest_path;
     dest_cgp_path.resize(dest_cgp_path.size()-3);
@@ -933,7 +944,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     std::vector<vigra::RGBValue<int, 0, 1, 2> > source_image_colors;
     std::vector<int> source_image_colors_pixels;
     //source_image_colors_pixels.push_back(0);
-    //A rather crafty and resource intensive approach. Can be simplified if we assume that the image is garuanteed to contain exactly two colors.
+    //A rather resource intensive approach. Can be simplified if we assume that the image is garuanteed to contain exactly two colors.
     bool doNotInsert = false;
 
     for(int x = 0; x < dim_x; x++)
@@ -962,9 +973,43 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         }
     }
 
+    //Get the (vertical) border width by iterating downwards from the image origin. Check if all pixels have the same color value as the pixel in the origin. If that is the case, this vertical strip is part of the border.
+    int borderWidth = 0;
+    vigra::RGBValue<int, 0, 1, 2> originColor = source_image(0,0);
+    bool borderWidthLoop = true;
+    while(borderWidthLoop == true)
+    {
+        for(int y = 0; y < dim_y; y++)
+        {
+            vigra::RGBValue<int, 0, 1, 2> yColor = source_image(borderWidth, y);
+            if(yColor.red() != originColor.red() || yColor.green() != originColor.green() || yColor.blue() != originColor.blue())
+            {
+                borderWidthLoop = false;
+                break;
+            }
+        }
+        borderWidth++;
+    }
+
+    //The border width still gets incremented when the loop aborts.
+    borderWidth--;
+
+    if(borderWidth == 0)
+    {
+        std::cout << "Image does not seem have a border" << std::endl;
+    }
+    else
+    {
+        std::cout << "Image has a border width of " << borderWidth << "px" << std::endl;
+    }
+
     //Abort if the image does not contain two colors
-    if(source_image_colors.size() != 2) {
-        std::cout << "Error: image does not contain two colors!" << std::endl;
+    if(source_image_colors.size() < 2) {
+        std::cout << "Error: image contains only one color!" << std::endl;
+        return;
+    }
+    else if(source_image_colors.size() > 2) {
+        std::cout << "Error: image contains more than two colors!" << std::endl;
         return;
     }
 
@@ -1001,16 +1046,75 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
             {
                 (*gScaleImage)(x,y) = 0;
             }
+            else
+            {
+                (*gScaleImage)(x,y) = 255;
+            }
         }
     }
 
     //Find out which color is marking the grains and which is marking the boundaries. Grains will be disconnected, so we will use this fact as a criterion.
-    //Use Vigra's label image feature to label disjoint areas within the image.
-    vigra::IImage label_image0(dim_x,dim_y);
-    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image0), true, source_image_colors[0]);
+    //Use Vigra's label image feature to label disjoint areas within the image. We need this image to merge disjoint grains from simulation images that actually belong together.
+    vigra::IImage label_image(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image), false, segmentation_color);
 
-    vigra::IImage label_image1(dim_x,dim_y);
-    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image1), true, source_image_colors[1]);
+    //The final label image with disjoint grains connected
+    vigra::IImage extended_label_image(dim_x, dim_y);
+    //Disjoint grain labels that actually belong together.
+    //The first and second values of the tuple is the label of the left-hand grain and its length respectively, the third and fourth values of the tuple are the label of the respective right-hand grain (or -1 if there is no such grain) and its length.
+    std::vector<fourIntTuple> labels;
+
+    int maxDiff = 2 * (borderWidth + 1);
+    
+    //Find grains on the left-hand side of the label image that seem to cross the image border
+    std::cout << "Searching for vertical disjoint grains..." << std::endl;
+    for(int y = 0; y < dim_y; y++)
+    {
+        int yLabel = label_image(borderWidth + 1, y);
+        if(yLabel != 0)
+        {
+            if(labels.size() == 0) //Initialization, no elements in labels
+            {
+                fourIntTuple yTuple;
+                yTuple.c1 = yLabel;
+                yTuple.c2 = 1;
+                yTuple.c3 = -1;
+                yTuple.c4 = 0;
+                yTuple.c5 = y;
+                labels.push_back(yTuple);
+            }
+            else if(labels.size() != 0 && labels.back().c1 != yLabel) //Elements in labels, but new label found
+            {
+                fourIntTuple yTuple;
+                yTuple.c1 = yLabel;
+                yTuple.c2 = 1;
+                yTuple.c3 = -1; //Finding the respective grains comes later
+                yTuple.c4 = 0;
+                yTuple.c5 = y; 
+                labels.push_back(yTuple);
+            }
+            else //Elements in labels, no new label found
+            {
+                labels.back().c2++;
+            }
+        }
+    }   
+    
+    std::cout << "Candidates are:" << std::endl;
+    for(int i = 0; i < labels.size(); i++)
+    {
+        std::cout << "Label #" << labels[i].c1 << "with a length of " << labels[i].c2 << "px starting at (" << borderWidth + 1 << ", " << labels[i].c5 << ")" << std::endl;
+    }
+
+    //Now we want to find grains on the right-hand side of the image that could belong to the grains we found before
+    for(int i = 0; i < labels.size(); i++)
+    {
+        int r = dim_x - borderWidth - 1;
+        //TODO: do stuff
+    }
+    
+    /*vigra::IImage label_image1(dim_x,dim_y);
+    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image1), true, source_image_colors[1]);*/
 
     /*vigra::IImage label_image2(dim_x,dim_y);
     vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image2), false, source_image_colors[0]);
@@ -1019,15 +1123,16 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image3), false, source_image_colors[1]);*/
 
     //export the label image
-    /*exportImage(srcImageRange(label_image0), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label0.bmp"));
-    exportImage(srcImageRange(label_image1), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label1.bmp"));*/
+    exportImage(srcImageRange(label_image), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label0.bmp"));
+    /*exportImage(srcImageRange(label_image1), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label1.bmp"));*/
     /*exportImage(srcImageRange(label_image2), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label2.bmp"));
     exportImage(srcImageRange(label_image3), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label3.bmp"));*/
     std::string source_image_path_suffix = source_image_path;
     source_image_path_suffix.substr(0, source_image_path_suffix.length() - 4);
     source_image_path_suffix.append("_color.bmp");
     exportImage(srcImageRange(source_image), vigra::ImageExportInfo(source_image_path_suffix.c_str()));
-    exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(source_image_path.c_str()));
+    //exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(source_image_path.c_str()));
+    exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(/*source_image_path.c_str()*/"/home/akuehlwe/test_data/FFT_sim/converted.bmp"));
 
-    compute_watershed_regions_binary(source_image_path, dest_image_path, equalTolerance, size, rank, gScaleImage, true);
+    //compute_watershed_regions_binary(source_image_path, dest_image_path, equalTolerance, size, rank, gScaleImage, true);
 }
