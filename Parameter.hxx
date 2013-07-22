@@ -1,4 +1,6 @@
-// IceGrain: Extraction and parameterization of grain boundary networks of ice
+/*! \file Parameter.hxx
+ */ 
+// CIS: Random forest based segmentation project
 //
 // Copyright (c) 2013 Tobias Binder.
 // 
@@ -15,7 +17,7 @@
 //   this list of conditions and the following disclaimer in the documentation
 //   and/or other materials provided with the distribution.
 // - All advertising materials mentioning features or use of this software must 
-//   display the following acknowledgement: ``This product includes the IceGrain
+//   display the following acknowledgement: ``This product includes the CIS
 //   package developed by Tobias Binder and others''.
 // - The name of the author must not be used to endorse or promote products 
 //   derived from this software without specific prior written permission.
