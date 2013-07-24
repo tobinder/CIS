@@ -452,7 +452,7 @@ void compute_ws_regions(std::string source_image_filepath,std::string preprocess
     //do the watershed segmentation
     watershedSegmentation_regions(preprocessed_image,ws_region_image,labels_img,equalTolerance);
 
-    //export the ws region image als std::vector
+    //export the ws region image as std::vector
     std::vector<unsigned int>  labeling_vector_x;
     labeling_vector_x.resize(dim_x);
 
@@ -677,7 +677,7 @@ void compute_watershed_regions(std::string source_image_path,std::string dest_im
 
     //int nr_areas=0;
 
-    //export the ws region image als std::vector
+    //export the ws region image as std::vector
     std::vector<unsigned int>  labeling_vector_x;
     labeling_vector_x.resize(dim_x);
 
@@ -778,7 +778,7 @@ void compute_watershed_regions_binary(std::string source_image_path,std::string 
 
     std::cout<<"...done"<<std::endl;
 
-    //export the ws region image als std::vector
+    //export the ws region image as std::vector
     std::vector<unsigned int>  labeling_vector_x;
     labeling_vector_x.resize(dim_x);
 
@@ -1036,8 +1036,8 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     /*exportImage(srcImageRange(label_image2), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label2.bmp"));
     exportImage(srcImageRange(label_image3), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label3.bmp"));*/
     std::string source_image_path_suffix = source_image_path;
-    source_image_path_suffix.substr(0, source_image_path_suffix.length() - 4);
-    source_image_path_suffix.append("_color.bmp");
+    source_image_path_suffix.resize(source_image_path_suffix.size() - 4);
+    source_image_path_suffix.append("_color.png");
     exportImage(srcImageRange(source_image), vigra::ImageExportInfo(source_image_path_suffix.c_str()));
     //exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(source_image_path.c_str()));
     exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(/*source_image_path.c_str()*/"/home/akuehlwe/test_data/FFT_sim/converted.bmp"));
