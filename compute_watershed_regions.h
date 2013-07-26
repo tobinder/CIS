@@ -78,13 +78,12 @@ template <class T> struct EqualWithToleranceFunctor
     T t;
 };
 
-struct fourIntTuple
+struct FFTBorderGrain
 {
-    int c1;
-    int c2;
-    int c3;
-    int c4;
-    int c5;
+    int label; //Grain label
+    vigra::Point2D startingPos; //Starting position
+    int length; //Grain border edge length along the chosen axis in positive direction
+    vigra::Point2D medianPos; //Median position of the Grain's border egde
 };
 
 /*! \fn compute_ws_regions(std::string source_image_filepath,std::string preprocessed_probmap_filepath,std::string dest_image_path,int limit,int equalTolerance)
@@ -762,6 +761,8 @@ void compute_watershed_regions_binary(std::string source_image_path,std::string 
     else
     {
         labels_img = *converted_source_image;
+        dim_x = labels_img.width();
+        dim_y = labels_img.height();
         delete converted_source_image;
     }
 
@@ -842,7 +843,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     bool hasBorder = true;
 
     //Image containing the grayscale version of the segmentation
-    vigra::IImage * gScaleImage = new vigra::IImage(dim_x, dim_y);
+    vigra::IImage * gScaleImage; //= new vigra::IImage(dim_x, dim_y);
     //vigra::IImage gScaleImage(dim_x, dim_y);
 
     int totalPixelNumber = dim_x*dim_y;
@@ -859,7 +860,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         for(int y = 0; y < dim_y; y++)
         {
             //Make the grayscale image white
-            (*gScaleImage)(x,y) = 255;
+            //(*gScaleImage)(x,y) = 255;
             //Get the color value for the pixel and check if it is already in the color vector. Count the instances of this color
             doNotInsert = false;
             vigra::RGBValue<int, 0, 1, 2> xyColor = source_image(x,y);
@@ -946,7 +947,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         ") as segmentation color" << std::endl;
 
     //Paint the grayscale image
-    for(int x = 0; x < dim_x; x++)
+    /*for(int x = 0; x < dim_x; x++)
     {
         for(int y = 0; y < dim_y; y++)
         {
@@ -959,88 +960,662 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
                 (*gScaleImage)(x,y) = 255;
             }
         }
-    }
+    }*/
 
     //Find out which color is marking the grains and which is marking the boundaries. Grains will be disconnected, so we will use this fact as a criterion.
     //Use Vigra's label image feature to label disjoint areas within the image. We need this image to merge disjoint grains from simulation images that actually belong together.
     vigra::IImage label_image(dim_x,dim_y);
     vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image), false, segmentation_color);
 
-    //The final label image with disjoint grains connected
-    vigra::IImage extended_label_image(dim_x, dim_y);
     //Disjoint grain labels that actually belong together.
-    //The first and second values of the tuple is the label of the left-hand grain and its length respectively, the third and fourth values of the tuple are the label of the respective right-hand grain (or -1 if there is no such grain) and its length.
-    std::vector<fourIntTuple> labels;
+    std::vector<FFTBorderGrain> borderGrainsL; //Left-hand side border grains
+    std::vector<FFTBorderGrain> borderGrainsR; //Right-hand side border grains
 
-    int maxDiff = 2 * (borderWidth + 1);
-    
-    //Find grains on the left-hand side of the label image that seem to cross the image border
-    std::cout << "Searching for vertical disjoint grains..." << std::endl;
+    int maxDiff = 2 * (borderWidth + 2); //Maximum difference
+
     for(int y = 0; y < dim_y; y++)
     {
         int yLabel = label_image(borderWidth + 1, y);
         if(yLabel != 0)
         {
-            if(labels.size() == 0) //Initialization, no elements in labels
+            if(borderGrainsL.size() == 0) //Initialization, no elements in labels
             {
-                fourIntTuple yTuple;
-                yTuple.c1 = yLabel;
-                yTuple.c2 = 1;
-                yTuple.c3 = -1;
-                yTuple.c4 = 0;
-                yTuple.c5 = y;
-                labels.push_back(yTuple);
+                FFTBorderGrain yGrain;
+                yGrain.label = yLabel;
+                vigra::Point2D startingP = vigra::Point2D(borderWidth + 1, y);
+                yGrain.startingPos = startingP;
+                yGrain.length = 1;
+                borderGrainsL.push_back(yGrain);
             }
-            else if(labels.size() != 0 && labels.back().c1 != yLabel) //Elements in labels, but new label found
+            else if(borderGrainsL.size() != 0 && borderGrainsL.back().label != yLabel) //Elements in labels, but new label found
             {
-                fourIntTuple yTuple;
-                yTuple.c1 = yLabel;
-                yTuple.c2 = 1;
-                yTuple.c3 = -1; //Finding the respective grains comes later
-                yTuple.c4 = 0;
-                yTuple.c5 = y; 
-                labels.push_back(yTuple);
+                FFTBorderGrain yGrain;
+                yGrain.label = yLabel;
+                vigra::Point2D startingP = vigra::Point2D(borderWidth + 1, y);
+                yGrain.startingPos = startingP;
+                yGrain.length = 1;
+                borderGrainsL.push_back(yGrain);            
             }
             else //Elements in labels, no new label found
             {
-                labels.back().c2++;
+                borderGrainsL.back().length++;
             }
         }
-    }   
+        if(yLabel == 0 && borderGrainsL.size() != 0) //Calculate the last grain edge's median position
+        {
+            vigra::Point2D medP = vigra::Point2D(borderGrainsL.back().startingPos.x, borderGrainsL.back().startingPos.y + borderGrainsL.back().length/2);
+            borderGrainsL.back().medianPos = medP;
+        }
+        yLabel = label_image(dim_x - borderWidth -1 , y);
+        if(yLabel != 0)
+        {
+            if(borderGrainsR.size() == 0) //Initialization, no elements in labels
+            {
+                FFTBorderGrain yGrain;
+                yGrain.label = yLabel;
+                vigra::Point2D startingP = vigra::Point2D(dim_x - borderWidth - 1, y);
+                yGrain.startingPos = startingP;
+                yGrain.length = 1;
+                borderGrainsR.push_back(yGrain);
+            }
+            else if(borderGrainsR.size() != 0 && borderGrainsR.back().label != yLabel) //Elements in labels, but new label found
+            {
+                FFTBorderGrain yGrain;
+                yGrain.label = yLabel;
+                vigra::Point2D startingP = vigra::Point2D(dim_x - borderWidth - 1, y);
+                yGrain.startingPos = startingP;
+                yGrain.length = 1;
+                borderGrainsR.push_back(yGrain);
+            }
+            else //Elements in labels, no new label found
+            {
+                borderGrainsR.back().length++;
+            }
+        }
+        if(yLabel == 0 && borderGrainsR.size() != 0) //Calculate the last grain edge's median position
+        {
+            vigra::Point2D medP = vigra::Point2D(borderGrainsR.back().startingPos.x, borderGrainsR.back().startingPos.y + borderGrainsR.back().length/2);
+            borderGrainsR.back().medianPos = medP;
+        }
+    }
     
-    std::cout << "Candidates are:" << std::endl;
-    for(int i = 0; i < labels.size(); i++)
+    /*std::cout << "Candidates on the left-hand side are:" << std::endl;
+    for(int i = 0; i < borderGrainsL.size(); i++)
     {
-        std::cout << "Label #" << labels[i].c1 << "with a length of " << labels[i].c2 << "px starting at (" << borderWidth + 1 << ", " << labels[i].c5 << ")" << std::endl;
+        std::cout << "Label #" << borderGrainsL[i].label << " with a length of " << borderGrainsL[i].length << "px starting at (" << borderGrainsL[i].startingPos.x << ", " << borderGrainsL[i].startingPos.y << ") and a median position of (" << borderGrainsL[i].medianPos.x << ", " << borderGrainsL[i].medianPos.y << ")"  << std::endl;
+    }
+    std::cout << "Candidates on the right-hand side are:" << std::endl;
+    for(int i = 0; i < borderGrainsR.size(); i++)
+    {
+        std::cout << "Label #" << borderGrainsR[i].label << " with a length of " << borderGrainsR[i].length << "px starting at (" << borderGrainsR[i].startingPos.x << ", " << borderGrainsR[i].startingPos.y << ") and a median position of (" << borderGrainsR[i].medianPos.x << ", " << borderGrainsR[i].medianPos.y << ")"  << std::endl;
+    }*/
+
+    //Horizontal grain pairs
+    std::vector<std::pair<FFTBorderGrain, FFTBorderGrain> > hPairs;
+    
+    //Now we want to find grains that belong to each other (naive approach. TODO: refine)
+    int foundhPairs = 0;
+    for(int i = 0; i < borderGrainsL.size(); i++)
+    {
+        FFTBorderGrain iGrain = borderGrainsL[i];
+        for(int j = 0; j < borderGrainsR.size(); j++)
+        {
+            FFTBorderGrain jGrain = borderGrainsR[j];
+            if(abs(iGrain.startingPos.y - jGrain.startingPos.y) + abs(iGrain.medianPos.y - jGrain.medianPos.y) <= 2*maxDiff)
+            {
+                std::pair<FFTBorderGrain, FFTBorderGrain> pair;
+                pair.first = iGrain;
+                pair.second = jGrain;
+                hPairs.push_back(pair);
+                //std::cout << "Found grain pair between labels " << iGrain.label << " and " << jGrain.label << std::endl;
+                foundhPairs++;
+                break;
+            }
+        }
     }
 
-    //Now we want to find grains on the right-hand side of the image that could belong to the grains we found before
-    for(int i = 0; i < labels.size(); i++)
+   /* if(foundhPairs == borderGrainsL.size())
     {
-        int r = dim_x - borderWidth - 1;
-        //TODO: do stuff
+        std::cout << "All grains on the left-hand side have a match" << std::endl;
+    }*/
+
+    //Append the left-hand side matches on the right-hand side of the image
+    //Get the width of the widest grain on the left-hand side of the image
+    int maxWidth = -1;
+    for(int i = 0; i < hPairs.size(); i++)
+    {
+        FFTBorderGrain iGrain = hPairs[i].first;
+        for(int y = 0; y < dim_y; y++)
+        {
+            int xWidth = 0;
+            for(int x = iGrain.startingPos.x; x < dim_x; x++)
+            {
+                if(iGrain.label == label_image(x, y))
+                {
+                    xWidth++;
+                }
+            }
+            if(xWidth >= maxWidth)
+            {
+                maxWidth = xWidth;
+            }
+        }
+    }
+    maxWidth = maxWidth;
+    std::cout << "Maximum grain width = " << maxWidth << "px" << std::endl;
+
+    //Now do the same thing vertically
+    std::vector<FFTBorderGrain> borderGrainsU; //Upper side border grains
+    std::vector<FFTBorderGrain> borderGrainsD; //Lower side border grains
+
+    for(int x = 0; x < dim_x; x++)
+    {
+        int xLabel = label_image(x, borderWidth + 1);
+        if(xLabel != 0)
+        {
+            if(borderGrainsU.size() == 0) //Initialization, no elements in labels
+            {
+                FFTBorderGrain xGrain;
+                xGrain.label = xLabel;
+                vigra::Point2D startingP = vigra::Point2D(x, borderWidth + 1);
+                xGrain.startingPos = startingP;
+                xGrain.length = 1;
+                borderGrainsU.push_back(xGrain);
+            }
+            else if(borderGrainsU.size() != 0 && borderGrainsU.back().label != xLabel) //Elements in labels, but new label found
+            {
+                FFTBorderGrain xGrain;
+                xGrain.label = xLabel;
+                vigra::Point2D startingP = vigra::Point2D(x, borderWidth + 1);
+                xGrain.startingPos = startingP;
+                xGrain.length = 1;
+                borderGrainsU.push_back(xGrain);            
+            }
+            else //Elements in labels, no new label found
+            {
+                borderGrainsU.back().length++;
+            }
+        }
+        if(xLabel == 0 && borderGrainsU.size() != 0) //Calculate the last grain edge's median position
+        {
+            vigra::Point2D medP = vigra::Point2D(borderGrainsU.back().startingPos.x, borderGrainsU.back().startingPos.y + borderGrainsU.back().length/2);
+            borderGrainsU.back().medianPos = medP;
+        }
+        xLabel = label_image(x, dim_y - borderWidth -1);
+        if(xLabel != 0)
+        {
+            if(borderGrainsD.size() == 0) //Initialization, no elements in labels
+            {
+                FFTBorderGrain xGrain;
+                xGrain.label = xLabel;
+                vigra::Point2D startingP = vigra::Point2D(x, dim_y - borderWidth - 1);
+                xGrain.startingPos = startingP;
+                xGrain.length = 1;
+                borderGrainsD.push_back(xGrain);
+            }
+            else if(borderGrainsD.size() != 0 && borderGrainsD.back().label != xLabel) //Elements in labels, but new label found
+            {
+                FFTBorderGrain xGrain;
+                xGrain.label = xLabel;
+                vigra::Point2D startingP = vigra::Point2D(x, dim_y - borderWidth - 1);
+                xGrain.startingPos = startingP;
+                xGrain.length = 1;
+                borderGrainsD.push_back(xGrain);
+            }
+            else //Elements in labels, no new label found
+            {
+                borderGrainsD.back().length++;
+            }
+        }
+        if(xLabel == 0 && borderGrainsD.size() != 0) //Calculate the last grain edge's median position
+        {
+            vigra::Point2D medP = vigra::Point2D(borderGrainsD.back().startingPos.x, borderGrainsD.back().startingPos.y + borderGrainsD.back().length/2);
+            borderGrainsD.back().medianPos = medP;
+        }
     }
     
-    /*vigra::IImage label_image1(dim_x,dim_y);
-    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image1), true, source_image_colors[1]);*/
+    /*std::cout << "Candidates on the upper side are:" << std::endl;
+    for(int i = 0; i < borderGrainsU.size(); i++)
+    {
+        std::cout << "Label #" << borderGrainsU[i].label << " with a length of " << borderGrainsU[i].length << "px starting at (" << borderGrainsU[i].startingPos.x << ", " << borderGrainsU[i].startingPos.y << ") and a median position of (" << borderGrainsU[i].medianPos.x << ", " << borderGrainsU[i].medianPos.y << ")"  << std::endl;
+    }
+    std::cout << "Candidates on the lower side are:" << std::endl;
+    for(int i = 0; i < borderGrainsD.size(); i++)
+    {
+        std::cout << "Label #" << borderGrainsD[i].label << " with a length of " << borderGrainsD[i].length << "px starting at (" << borderGrainsD[i].startingPos.x << ", " << borderGrainsD[i].startingPos.y << ") and a median position of (" << borderGrainsD[i].medianPos.x << ", " << borderGrainsD[i].medianPos.y << ")"  << std::endl;
+    }*/
 
-    /*vigra::IImage label_image2(dim_x,dim_y);
-    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image2), false, source_image_colors[0]);
+    //Vertical grain pairs
+    std::vector<std::pair<FFTBorderGrain, FFTBorderGrain> > vPairs;
+    
+    //Now we want to find grains that belong to each other (naive approach. TODO: refine)
+    int foundvPairs = 0;
+    for(int i = 0; i < borderGrainsU.size(); i++)
+    {
+        FFTBorderGrain iGrain = borderGrainsU[i];
+        for(int j = 0; j < borderGrainsD.size(); j++)
+        {
+            FFTBorderGrain jGrain = borderGrainsD[j];
+            if(abs(iGrain.startingPos.x - jGrain.startingPos.x) + abs(iGrain.medianPos.x - jGrain.medianPos.x) <= 2*maxDiff)
+            {
+                std::pair<FFTBorderGrain, FFTBorderGrain> pair;
+                pair.first = iGrain;
+                pair.second = jGrain;
+                vPairs.push_back(pair);
+                //std::cout << "Found grain pair between labels " << iGrain.label << " and " << jGrain.label << std::endl;
+                foundvPairs++;
+                break;
+            }
+        }
+    }
 
-    vigra::IImage label_image3(dim_x,dim_y);
-    vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image3), false, source_image_colors[1]);*/
+    /*if(foundvPairs == borderGrainsU.size())
+    {
+        std::cout << "All grains on the upper side have a match" << std::endl;
+    }*/
+
+    //Append the upper side matches on the lower side of the image
+    //Get the height of the widest grain on the upper side of the image
+    int maxHeight = -1;
+    for(int i = 0; i < vPairs.size(); i++)
+    {
+        FFTBorderGrain iGrain = vPairs[i].first;
+        for(int x = 0; x < dim_x; x++)
+        {
+            int yHeight = 0;
+            for(int y = iGrain.startingPos.y; y < dim_y; y++)
+            {
+                if(iGrain.label == label_image(x, y))
+                {
+                    yHeight++;
+                }
+            }
+            if(yHeight >= maxHeight)
+            {
+                maxHeight = yHeight;
+            }
+        }
+    }
+    std::cout << "Maximum grain height = " << maxHeight << "px" << std::endl;
+
+    //Create the extended label image
+    vigra::IImage label_image_ext(dim_x + maxWidth + 4, dim_y + maxHeight + 4);
+    for(int y = 0; y < dim_y; y++)
+    {
+        for(int x = 0; x < dim_x; x++)
+        {
+            label_image_ext(x, y) = label_image(x, y);
+        }
+    }
+
+    for(int i = 0; i < hPairs.size(); i++)
+    {
+        FFTBorderGrain iGrain = hPairs[i].first;
+        int iLabel = iGrain.label;
+        int iLabelPair = hPairs[i].second.label;
+        for(int y = 0; y < dim_y; y++)
+        {
+            for(int x = 0; x < dim_x; x++)
+            {
+                if(label_image(x, y) == iLabel)
+                {
+                    label_image_ext(x, y) = 0;
+                    label_image_ext(dim_x + x, y) = iLabelPair;
+                }
+            }
+        }
+        hPairs[i].first.startingPos.x = hPairs[i].first.startingPos.x + dim_x;
+    }
+
+    for(int i = 0; i < vPairs.size(); i++)
+    {
+        FFTBorderGrain iGrain = vPairs[i].first;
+        int iLabel = iGrain.label;
+        int iLabelPair = vPairs[i].second.label;
+        for(int y = 0; y < dim_y; y++)
+        {
+            for(int x = 0; x < dim_x + maxWidth; x++)
+            {
+                if(label_image(x, y) == iLabel)
+                {
+                    label_image_ext(x, y) = 0;
+                    label_image_ext(x, dim_y + y) = iLabelPair;
+                }
+            }
+        }
+        vPairs[i].first.startingPos.y = vPairs[i].first.startingPos.y + dim_y;
+    }
+
+    //Check if there are pairs that stretch both horizontally and vertically
+    for(int i = 0; i < hPairs.size(); i++)
+    {
+        FFTBorderGrain iGrain = hPairs[i].first;
+        FFTBorderGrain iGrainPair = hPairs[i].second;
+        for(int j = 0; j < vPairs.size(); j++)
+        {
+            FFTBorderGrain jGrain = vPairs[j].first;
+            if(iGrain.label == jGrain.label)
+            {
+                //If that is the case, the "merged" grain will be on all edges of the image. We, however, want it only to be on the lower right-hand side, so we are deleting all other instances.
+                FFTBorderGrain jGrainPair = vPairs[j].second;
+                //Delete the instance on the lower left-hand side of the image
+                for(int y = 0; y < dim_y + maxHeight; y++)
+                {
+                    for(int x = jGrain.startingPos.x; x <= jGrain.length; x++)
+                    {
+                        if(label_image_ext(x, y) == jGrainPair.label)
+                        {
+                            label_image_ext(x, y) = 0;
+                        }
+                    }
+                }
+                //Delete the instance on the upper right-hand side of the image
+                for(int y = 0; y < dim_y; y++)
+                {
+                    for(int x = 0; x < dim_x; x++)
+                    {
+                        if(label_image(x, y) == iGrain.label)
+                        {
+                            label_image_ext(x + dim_x, y) = 0;
+                        }
+                    }
+                }
+                //Finally, we adjust the label of the remaining "merged" grain to the one of the horizontal pair
+                for(int y = 0; y < dim_y + maxHeight; y++)
+                {
+                    for(int x = 0; x < dim_x + maxWidth; x++)
+                    {
+                        if(label_image_ext(x, y) == jGrainPair.label)
+                        {
+                            label_image_ext(x, y) = vPairs.back().second.label;
+                        }
+                    }
+                }
+                //Correct the starting and median positions of the grain as well as the label
+                hPairs[i].first.startingPos.y = iGrain.startingPos.y + dim_y;
+                hPairs[i].second.startingPos.y = iGrainPair.startingPos.y + dim_y;
+                //label_image_ext(hPairs[i].first.startingPos.x, hPairs[i].first.startingPos.y) = 70;
+                //label_image_ext(hPairs[i].second.startingPos.x, hPairs[i].second.startingPos.y) = 70;
+                
+                hPairs[i].second.medianPos.y = iGrainPair.medianPos.y + dim_y;
+                //label_image_ext(hPairs[i].second.medianPos.x, hPairs[i].second.medianPos.y) = 100;
+
+                hPairs[i].first.label = vPairs.back().second.label;
+                hPairs[i].second.label = vPairs.back().second.label;
+                            
+            }
+        }
+    }
+
+    //Close the horizontal gaps (OLD METHOD)
+    //Case 1: borderWidth = 1
+    /*for(int i = 0; i < hPairs.size(); i++)
+    {
+        //Start points. L is on the right-hand side of the former image border (now 2*borderWidth pixels wide), while R is on the left-hand side.
+        vigra::Point2D iStartPosL = hPairs[i].first.startingPos;
+        iStartPosL.x = iStartPosL.x - maxWidth;
+        vigra::Point2D iStartPosR = hPairs[i].second.startingPos;
+
+        int iLabel = hPairs[i].second.label;
+
+        //End points
+        vigra::Point2D iEndPosL = hPairs[i].first.startingPos;
+        iEndPosL.y = iEndPosL.y + hPairs[i].first.length;
+        vigra::Point2D iEndPosR = hPairs[i].second.startingPos;
+        iEndPosR.y = iEndPosR.y + hPairs[i].second.length;
+
+        //If the difference is positive, L is lower than R, if it is negative, L is higher than R.
+        int iStartDiff = iStartPosL.y - iStartPosR.y;
+        int iEndDiff = iEndPosL.y - iEndPosR.y;
+        std::cout << "Label #" << hPairs[i].second.label << ", upper diff = " << iStartDiff << ", lower diff = " << iEndDiff << std::endl;
+
+        //Draw the upper connection line
+        if(abs(iStartDiff) < 4)
+        {
+            int iY = iStartPosR.y;
+            for(int x = iStartPosR.x + 1; x <= iStartPosR.x + 2*borderWidth; x++)
+            {
+                label_image_ext(x, iY + (iStartDiff/2*borderWidth)) = iLabel;
+                iY = iY + (iStartDiff/2*borderWidth);
+            }
+        }
+        else if(abs(iStartDiff) >= 4)
+        {
+            label_image_ext(iStartPosR.x + 1, iStartPosR.y) = iLabel;
+            label_image_ext(iStartPosR.x + 2, iStartPosL.y) = iLabel;            
+        }
+        
+        //Draw the lower connection line
+        if(abs(iEndDiff) < 4)
+        {
+            int iY = iEndPosR.y - 1;
+            for(int x = iEndPosR.x + 1; x <= iEndPosR.x + 2*borderWidth; x++)
+            {
+                label_image_ext(x, iY + (iEndDiff/2*borderWidth)) = iLabel;
+                iY = iY + (iEndDiff/2*borderWidth);
+            }
+        }
+        else if(abs(iEndDiff) >= 4)
+        {
+            if(iEndDiff >= 0)
+            {
+                label_image_ext(iEndPosR.x + 1, iEndPosR.y - 1) = iLabel;
+                label_image_ext(iEndPosR.x + 2, iEndPosR.y - 1) = iLabel;
+            }
+            else
+            {
+                label_image_ext(iEndPosR.x + 1, iEndPosL.y - 1) = iLabel;                
+                label_image_ext(iEndPosR.x + 2, iEndPosL.y - 1) = iLabel;
+            }
+        }
+
+        //Fill the gap between the connection lines
+        for(int x = hPairs[i].second.medianPos.x + 1; x <= hPairs[i].second.medianPos.x + 2*borderWidth; x++)
+        {
+            for(int y = hPairs[i].second.medianPos.y; y >= 0; y--)
+            {
+                if(label_image_ext(x, y) == 0)
+                {
+                    label_image_ext(x, y) = iLabel;
+                }
+                else if(label_image_ext(x, y) == iLabel)
+                {
+                    break;
+                }
+            }
+            for(int y = hPairs[i].second.medianPos.y + 1; y < dim_y + maxHeight; y++)
+            {
+                if(label_image_ext(x, y) == 0)
+                {
+                    label_image_ext(x, y) = iLabel;
+                }
+                else if(label_image_ext(x, y) == iLabel)
+                {
+                    break;
+                }
+            }
+        }
+       
+    }*/
+
+    //Close the horizontal gaps
+    int vX = dim_x - 1;
+    for(int y = 0; y < dim_y + maxHeight; y++)
+    {
+        if(label_image_ext(vX, y) == 0)
+        {
+            if(label_image_ext(vX - 1, y) != 0)
+            {
+                label_image_ext(vX, y) = label_image_ext(vX - 1, y);
+            }
+        }
+    }
+    vX = dim_x;
+    for(int y = 0; y < dim_y + maxHeight; y++)
+    {
+        if(label_image_ext(vX, y) == 0)
+        {
+            if(label_image_ext(vX + 1, y) != 0 && label_image_ext(vX - 1, y) == label_image_ext(vX + 1,y ))
+            {
+                label_image_ext(vX, y) = label_image_ext(vX - 1, y);
+            }
+            else if(label_image_ext(vX + 1, y) == 0 && label_image_ext(vX - 1, y) == label_image_ext(vX + 1, y))
+            {
+                if(label_image_ext(vX + 1, y + 1) != label_image_ext(vX - 1, y))
+                {
+                    label_image_ext(vX, y) = label_image_ext(vX - 1, y);
+                }
+            }
+        }
+    }
+
+    //Close the vertical gaps
+    int vY = dim_y - 1;
+    for(int x = 0; x < dim_x + maxWidth; x++)
+    {
+        if(label_image_ext(x, vY) == 0)
+        {
+            if(label_image_ext(x, vY - 1) != 0)
+            {
+                label_image_ext(x, vY) = label_image_ext(x, vY - 1);
+            }
+        }
+    }
+    vY = dim_y;
+    for(int x = 0; x < dim_x + maxWidth; x++)
+    {
+        if(label_image_ext(x, vY) == 0)
+        {
+            if(label_image_ext(x, vY + 1) != 0 && label_image_ext(x, vY - 1) == label_image_ext(x, vY + 1))
+            {
+                label_image_ext(x, vY) = label_image_ext(x, vY - 1);
+            }
+            else if(label_image_ext(x, vY + 1) == 0 && label_image_ext(x, vY - 1) == label_image_ext(x, vY + 1))
+            {
+                
+            }
+        }
+    }
+
+
+
+    //Close the vertical gaps (OLD METHOD)
+    //Case 1: borderWidth = 1
+    /*for(int i = 0; i < vPairs.size(); i++)
+    {
+        //Start points. L is on the upper side of the former image border (now 2*borderWidth pixels wide), while R is on the lower side.
+        vigra::Point2D iStartPosL = vPairs[i].first.startingPos;
+        vigra::Point2D iStartPosR = vPairs[i].second.startingPos;
+
+        int iLabel = vPairs[i].second.label;
+
+        //End points
+        vigra::Point2D iEndPosL = vPairs[i].first.startingPos;
+        iEndPosL.x = iEndPosL.x + vPairs[i].first.length;
+        vigra::Point2D iEndPosR = vPairs[i].second.startingPos;
+        iEndPosR.x = iEndPosR.x + vPairs[i].second.length;
+
+        //If the difference is positive, L is lower than R, if it is negative, L is higher than R.
+        int iStartDiff = iStartPosL.x - iStartPosR.x;
+        int iEndDiff = iEndPosL.x - iEndPosR.x;
+        std::cout << "Label #" << vPairs[i].second.label << ", upper diff = " << iStartDiff << ", lower diff = " << iEndDiff << std::endl;
+
+        //Draw the upper connection line
+        if(abs(iStartDiff) < 4)
+        {
+            int iX = iStartPosR.x;
+            for(int y = iStartPosR.y + 1; y <= iStartPosR.y + 2*borderWidth; y++)
+            {
+                label_image_ext(iX + (iStartDiff/2*borderWidth), y) = iLabel;
+                iX = iX + (iStartDiff/2*borderWidth);
+            }
+        }
+        else if(abs(iStartDiff) >= 4)
+        {
+            label_image_ext(iStartPosR.x, iStartPosR.y + 1) = iLabel;
+            label_image_ext(iStartPosR.x, iStartPosL.y - 2) = iLabel;            
+        }
+        
+        //Draw the lower connection line
+        if(abs(iEndDiff) < 4)
+        {
+            int iX = iEndPosR.x - 1;
+            for(int y = iEndPosR.y + 1; y <= iEndPosR.y + 2*borderWidth; y++)
+            {
+                label_image_ext(iX + (iEndDiff/2*borderWidth), y) = iLabel;
+                iX = iX + (iEndDiff/2*borderWidth);
+            }
+        }*/
+        /*else if(abs(iEndDiff) >= 4)
+        {
+            if(iEndDiff >= 0)
+            {
+                label_image_ext(iEndPosR.x + 1, iEndPosR.y - 1) = iLabel;
+                label_image_ext(iEndPosR.x + 2, iEndPosR.y - 1) = iLabel;
+            }
+            else
+            {
+                label_image_ext(iEndPosR.x + 1, iEndPosL.y - 1) = iLabel;                
+                label_image_ext(iEndPosR.x + 2, iEndPosL.y - 1) = iLabel;
+            }
+        }
+
+        //Fill the gap between the connection lines
+        for(int x = hPairs[i].second.medianPos.x + 1; x <= hPairs[i].second.medianPos.x + 2*borderWidth; x++)
+        {
+            for(int y = hPairs[i].second.medianPos.y; y >= 0; y--)
+            {
+                if(label_image_ext(x, y) != iLabel)
+                {
+                    label_image_ext(x, y) = iLabel;
+                }
+                else if(label_image_ext(x, y) == iLabel)
+                {
+                    break;
+                }
+            }
+            for(int y = hPairs[i].second.medianPos.y + 1; y < dim_y; y++)
+            {
+                if(label_image_ext(x, y) != iLabel)
+                {
+                    label_image_ext(x, y) = iLabel;
+                }
+                else if(label_image_ext(x, y) == iLabel)
+                {
+                    break;
+                }
+            }
+        }
+       
+    }*/
+    
 
     //export the label image
-    exportImage(srcImageRange(label_image), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label0.bmp"));
-    /*exportImage(srcImageRange(label_image1), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label1.bmp"));*/
-    /*exportImage(srcImageRange(label_image2), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label2.bmp"));
-    exportImage(srcImageRange(label_image3), vigra::ImageExportInfo("/home/akuehlwe/test_data/pixel-classification/fft_label3.bmp"));*/
+    //exportImage(srcImageRange(label_image), vigra::ImageExportInfo("/home/hopla/svn/testImages/FFT_sim/fft_label0.bmp"));
+    
+    gScaleImage = new vigra::IImage(dim_x + maxWidth, dim_y + maxHeight);
+    for(int y = 0; y < dim_y + maxHeight; y++)
+    {
+        for(int x = 0; x < dim_x + maxWidth; x++)
+        {
+            if(label_image_ext(x, y) != 0)
+            {
+                (*gScaleImage)(x, y) = 255;
+            }
+            else if(label_image_ext(x, y) == 0)
+            {
+                (*gScaleImage)(x, y) = 0;
+            }
+        }
+    }
+    
     std::string source_image_path_suffix = source_image_path;
     source_image_path_suffix.resize(source_image_path_suffix.size() - 4);
     source_image_path_suffix.append("_color.png");
     exportImage(srcImageRange(source_image), vigra::ImageExportInfo(source_image_path_suffix.c_str()));
     //exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(source_image_path.c_str()));
-    exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(/*source_image_path.c_str()*/"/home/akuehlwe/test_data/FFT_sim/converted.bmp"));
+    //exportImage(srcImageRange(*gScaleImage), vigra::ImageExportInfo(/*source_image_path.c_str()*/"/home/hopla/svn/testImages/FFT_sim/converted.bmp"));
+   // exportImage(srcImageRange(label_image_ext), vigra::ImageExportInfo(/*source_image_path.c_str()*/"/home/hopla/svn/testImages/FFT_sim/label_image_ext.bmp"));
 
-    //compute_watershed_regions_binary(source_image_path, dest_image_path, equalTolerance, size, rank, gScaleImage, true);
+    compute_watershed_regions_binary(source_image_path, dest_image_path, equalTolerance, size, rank, gScaleImage, true);
 }
