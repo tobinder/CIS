@@ -150,7 +150,7 @@ void export_ws_hdf5(std::string &dest_path, unsigned int** ws_image, int dim_x, 
         //Create group Parameters
         hid_t group_id = H5Gcreate1(file_save, "/Parameters", 0);
 
-        std::cout << "Loading parameter file from: " << ParameterFile::filepath;
+        std::cout << "Loading parameter file from: " << ParameterFile::filepath << std::endl;
         ParameterFile paramFile;
         paramFile.load(ParameterFile::filepath);
         
