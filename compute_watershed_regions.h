@@ -78,12 +78,12 @@ template <class T> struct EqualWithToleranceFunctor
     T t;
 };
 
-struct FFTBorderGrain
+struct ElleBorderGrain
 {
-    int label; //Grain label
+    int label;                  //Grain label
     vigra::Point2D startingPos; //Starting position
-    int length; //Grain border edge length along the chosen axis in positive direction
-    vigra::Point2D medianPos; //Median position of the Grain's border egde
+    int length;                 //Grain border edge length along the chosen axis in positive direction
+    vigra::Point2D medianPos;   //Median position of the Grain's border egde
 };
 
 /*! \fn compute_ws_regions(std::string source_image_filepath,std::string preprocessed_probmap_filepath,std::string dest_image_path,int limit,int equalTolerance)
@@ -968,8 +968,8 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     vigra::labelImageWithBackground(vigra::srcImageRange(source_image), vigra::destImage(label_image), false, segmentation_color);
 
     //Disjoint grain labels that actually belong together.
-    std::vector<FFTBorderGrain> borderGrainsL; //Left-hand side border grains
-    std::vector<FFTBorderGrain> borderGrainsR; //Right-hand side border grains
+    std::vector<ElleBorderGrain> borderGrainsL; //Left-hand side border grains
+    std::vector<ElleBorderGrain> borderGrainsR; //Right-hand side border grains
 
     int maxDiff = 2 * (borderWidth + 2); //Maximum difference
 
@@ -980,7 +980,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         {
             if(borderGrainsL.size() == 0) //Initialization, no elements in labels
             {
-                FFTBorderGrain yGrain;
+                ElleBorderGrain yGrain;
                 yGrain.label = yLabel;
                 vigra::Point2D startingP = vigra::Point2D(borderWidth + 1, y);
                 yGrain.startingPos = startingP;
@@ -989,7 +989,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
             }
             else if(borderGrainsL.size() != 0 && borderGrainsL.back().label != yLabel) //Elements in labels, but new label found
             {
-                FFTBorderGrain yGrain;
+                ElleBorderGrain yGrain;
                 yGrain.label = yLabel;
                 vigra::Point2D startingP = vigra::Point2D(borderWidth + 1, y);
                 yGrain.startingPos = startingP;
@@ -1011,7 +1011,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         {
             if(borderGrainsR.size() == 0) //Initialization, no elements in labels
             {
-                FFTBorderGrain yGrain;
+                ElleBorderGrain yGrain;
                 yGrain.label = yLabel;
                 vigra::Point2D startingP = vigra::Point2D(dim_x - borderWidth - 1, y);
                 yGrain.startingPos = startingP;
@@ -1020,7 +1020,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
             }
             else if(borderGrainsR.size() != 0 && borderGrainsR.back().label != yLabel) //Elements in labels, but new label found
             {
-                FFTBorderGrain yGrain;
+                ElleBorderGrain yGrain;
                 yGrain.label = yLabel;
                 vigra::Point2D startingP = vigra::Point2D(dim_x - borderWidth - 1, y);
                 yGrain.startingPos = startingP;
@@ -1051,19 +1051,19 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     }*/
 
     //Horizontal grain pairs
-    std::vector<std::pair<FFTBorderGrain, FFTBorderGrain> > hPairs;
+    std::vector<std::pair<ElleBorderGrain, ElleBorderGrain> > hPairs;
     
     //Now we want to find grains that belong to each other (naive approach. TODO: refine)
     int foundhPairs = 0;
     for(int i = 0; i < borderGrainsL.size(); i++)
     {
-        FFTBorderGrain iGrain = borderGrainsL[i];
+        ElleBorderGrain iGrain = borderGrainsL[i];
         for(int j = 0; j < borderGrainsR.size(); j++)
         {
-            FFTBorderGrain jGrain = borderGrainsR[j];
+            ElleBorderGrain jGrain = borderGrainsR[j];
             if(abs(iGrain.startingPos.y - jGrain.startingPos.y) + abs(iGrain.medianPos.y - jGrain.medianPos.y) <= 2*maxDiff)
             {
-                std::pair<FFTBorderGrain, FFTBorderGrain> pair;
+                std::pair<ElleBorderGrain, ElleBorderGrain> pair;
                 pair.first = iGrain;
                 pair.second = jGrain;
                 hPairs.push_back(pair);
@@ -1084,7 +1084,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     int maxWidth = -1;
     for(int i = 0; i < hPairs.size(); i++)
     {
-        FFTBorderGrain iGrain = hPairs[i].first;
+        ElleBorderGrain iGrain = hPairs[i].first;
         for(int y = 0; y < dim_y; y++)
         {
             int xWidth = 0;
@@ -1105,8 +1105,8 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     std::cout << "Maximum grain width = " << maxWidth << "px" << std::endl;
 
     //Now do the same thing vertically
-    std::vector<FFTBorderGrain> borderGrainsU; //Upper side border grains
-    std::vector<FFTBorderGrain> borderGrainsD; //Lower side border grains
+    std::vector<ElleBorderGrain> borderGrainsU; //Upper side border grains
+    std::vector<ElleBorderGrain> borderGrainsD; //Lower side border grains
 
     for(int x = 0; x < dim_x; x++)
     {
@@ -1115,7 +1115,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         {
             if(borderGrainsU.size() == 0) //Initialization, no elements in labels
             {
-                FFTBorderGrain xGrain;
+                ElleBorderGrain xGrain;
                 xGrain.label = xLabel;
                 vigra::Point2D startingP = vigra::Point2D(x, borderWidth + 1);
                 xGrain.startingPos = startingP;
@@ -1124,7 +1124,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
             }
             else if(borderGrainsU.size() != 0 && borderGrainsU.back().label != xLabel) //Elements in labels, but new label found
             {
-                FFTBorderGrain xGrain;
+                ElleBorderGrain xGrain;
                 xGrain.label = xLabel;
                 vigra::Point2D startingP = vigra::Point2D(x, borderWidth + 1);
                 xGrain.startingPos = startingP;
@@ -1146,7 +1146,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
         {
             if(borderGrainsD.size() == 0) //Initialization, no elements in labels
             {
-                FFTBorderGrain xGrain;
+                ElleBorderGrain xGrain;
                 xGrain.label = xLabel;
                 vigra::Point2D startingP = vigra::Point2D(x, dim_y - borderWidth - 1);
                 xGrain.startingPos = startingP;
@@ -1155,7 +1155,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
             }
             else if(borderGrainsD.size() != 0 && borderGrainsD.back().label != xLabel) //Elements in labels, but new label found
             {
-                FFTBorderGrain xGrain;
+                ElleBorderGrain xGrain;
                 xGrain.label = xLabel;
                 vigra::Point2D startingP = vigra::Point2D(x, dim_y - borderWidth - 1);
                 xGrain.startingPos = startingP;
@@ -1186,19 +1186,19 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     }*/
 
     //Vertical grain pairs
-    std::vector<std::pair<FFTBorderGrain, FFTBorderGrain> > vPairs;
+    std::vector<std::pair<ElleBorderGrain, ElleBorderGrain> > vPairs;
     
     //Now we want to find grains that belong to each other (naive approach. TODO: refine)
     int foundvPairs = 0;
     for(int i = 0; i < borderGrainsU.size(); i++)
     {
-        FFTBorderGrain iGrain = borderGrainsU[i];
+        ElleBorderGrain iGrain = borderGrainsU[i];
         for(int j = 0; j < borderGrainsD.size(); j++)
         {
-            FFTBorderGrain jGrain = borderGrainsD[j];
+            ElleBorderGrain jGrain = borderGrainsD[j];
             if(abs(iGrain.startingPos.x - jGrain.startingPos.x) + abs(iGrain.medianPos.x - jGrain.medianPos.x) <= 2*maxDiff)
             {
-                std::pair<FFTBorderGrain, FFTBorderGrain> pair;
+                std::pair<ElleBorderGrain, ElleBorderGrain> pair;
                 pair.first = iGrain;
                 pair.second = jGrain;
                 vPairs.push_back(pair);
@@ -1219,7 +1219,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     int maxHeight = -1;
     for(int i = 0; i < vPairs.size(); i++)
     {
-        FFTBorderGrain iGrain = vPairs[i].first;
+        ElleBorderGrain iGrain = vPairs[i].first;
         for(int x = 0; x < dim_x; x++)
         {
             int yHeight = 0;
@@ -1250,7 +1250,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
 
     for(int i = 0; i < hPairs.size(); i++)
     {
-        FFTBorderGrain iGrain = hPairs[i].first;
+        ElleBorderGrain iGrain = hPairs[i].first;
         int iLabel = iGrain.label;
         int iLabelPair = hPairs[i].second.label;
         for(int y = 0; y < dim_y; y++)
@@ -1269,7 +1269,7 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
 
     for(int i = 0; i < vPairs.size(); i++)
     {
-        FFTBorderGrain iGrain = vPairs[i].first;
+        ElleBorderGrain iGrain = vPairs[i].first;
         int iLabel = iGrain.label;
         int iLabelPair = vPairs[i].second.label;
         for(int y = 0; y < dim_y; y++)
@@ -1289,15 +1289,15 @@ void compute_watershed_regions_binary_color(std::string source_image_path, std::
     //Check if there are pairs that stretch both horizontally and vertically
     for(int i = 0; i < hPairs.size(); i++)
     {
-        FFTBorderGrain iGrain = hPairs[i].first;
-        FFTBorderGrain iGrainPair = hPairs[i].second;
+        ElleBorderGrain iGrain = hPairs[i].first;
+        ElleBorderGrain iGrainPair = hPairs[i].second;
         for(int j = 0; j < vPairs.size(); j++)
         {
-            FFTBorderGrain jGrain = vPairs[j].first;
+            ElleBorderGrain jGrain = vPairs[j].first;
             if(iGrain.label == jGrain.label)
             {
                 //If that is the case, the "merged" grain will be on all edges of the image. We, however, want it only to be on the lower right-hand side, so we are deleting all other instances.
-                FFTBorderGrain jGrainPair = vPairs[j].second;
+                ElleBorderGrain jGrainPair = vPairs[j].second;
                 //Delete the instance on the lower left-hand side of the image
                 for(int y = 0; y < dim_y + maxHeight; y++)
                 {

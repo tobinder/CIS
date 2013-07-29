@@ -150,6 +150,8 @@ std::string ParameterFile::filepath = "";
 #include "pixel_complete.h"
 #include "boundary_complete.h"
 
+#include "ElleSim.h"
+
 SplitStream sout(std::cout);
 
 int main(int argc, char *argv[])
@@ -1264,6 +1266,28 @@ int main(int argc, char *argv[])
                 extract_bubbles(source_image_path,source_proc_image_path,firn,argv[argc-2]);
                 i++;
             }
+        }
+
+        /*
+         * OPTION -elle-export
+         */
+        else if(command_line_option == "-elle-export")
+        {
+            std::cout << "Option -elle-export" << std::endl;
+            std::string elleDataSetFilepath = argv[2];
+            std::string elleExportFilepath = argv[3];
+            std::string elleImageFilename = elleDataSetFilepath;
+            elleImageFilename = get_filename(elleImageFilename);
+            elleImageFilename = elleImageFilename.substr(0, elleImageFilename.length() - 5);
+            elleImageFilename.append(".png");
+
+            elleExportFilepath.append(elleImageFilename);
+
+            int dim_x = atoi(argv[4]);
+            int dim_y = atoi(argv[5]);
+
+            ElleDataSet elleDS(elleDataSetFilepath);
+            elleDS.exportToImage(dim_x, dim_y, elleExportFilepath);
         }
 
         else
