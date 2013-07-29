@@ -495,10 +495,17 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
         }
     }
 
-    //The final label image with a 2 pixel safety margin
-    vigra::IImage label_image(maxWidth + 2, maxHeight + 2);
+    //The final image with a 2 pixel safety margin
+    vigra::BasicImage<bool> final_image(maxWidth + 4, maxHeight + 4);
+    for(int y = 0; y < maxHeight + 4; y++)
+    {
+        for(int x = 0; x < maxWidth + 4; x++)
+        {
+            final_image(x, y) = true;
+        }
+    }
     
-    //Draw the flynns into the label image
+    //Draw the flynns into the final image
     for(int i = 0; i < flynns.size(); i++)
     {
         //Iterate through all flynn nodes and draw splines between them
@@ -521,8 +528,8 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
             }
 
             
-            label_image(jPoint.x, jPoint.y) = 255;
-            label_image(jPointPrev.x, jPointPrev.y) = 255;
+            final_image(jPoint.x+2, jPoint.y+2) = false;
+            final_image(jPointPrev.x+2, jPointPrev.y+2) = false;
             
             int diff_x;
             int diff_y;
@@ -534,7 +541,7 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
                 for(int x = jPointPrev.x; x <= jPoint.x; x++)
                 {
                     int y = ceil(((double)diff_y/(double)diff_x)*x + jPointPrev.y - ((double)diff_y/(double)diff_x)*jPointPrev.x);
-                    label_image(x, y) = 255;
+                    final_image(x+2, y+2) = false;
                 }
             }
             else if(jPoint.x < jPointPrev.x && abs(jPoint.y - jPointPrev.y) <= abs(jPoint.x - jPointPrev.x))
@@ -544,7 +551,7 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
                 for(int x = jPoint.x; x <= jPointPrev.x; x++)
                 {
                     int y = ceil(((double)diff_y/(double)diff_x)*x + jPoint.y - ((double)diff_y/(double)diff_x)*jPoint.x);
-                    label_image(x, y) = 255;
+                    final_image(x+2, y+2) = false;
                 }
             }
             else if(jPoint.x == jPointPrev.x)
@@ -553,14 +560,14 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
                 {
                     for(int y = jPointPrev.y; y <= jPoint.y; y++)
                     {
-                        label_image(jPoint.x, y) = 255;
+                        final_image(jPoint.x+2, y+2) = false;
                     }
                 }
                 if(jPoint.y < jPointPrev.y)
                 {
                     for(int y = jPoint.y; y <= jPointPrev.y; y++)
                     {
-                        label_image(jPoint.x, y) = 255;
+                        final_image(jPoint.x+2, y+2) = false;
                     }
                 }                
             }
@@ -573,7 +580,7 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
                     for(int y = jPointPrev.y; y <= jPoint.y; y++)
                     {
                         int x = ceil(((double)diff_x/(double)diff_y)*y + jPointPrev.x - ((double)diff_x/(double)diff_y)*jPointPrev.y);
-                        label_image(x, y) = 255;
+                        final_image(x+2, y+2) = false;
                     }
                 }
                 if(jPoint.y < jPointPrev.y)
@@ -583,14 +590,14 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
                     for(int y = jPoint.y; y <= jPointPrev.y; y++)
                     {
                         int x = ceil(((double)diff_x/(double)diff_y)*y + jPoint.x - ((double)diff_x/(double)diff_y)*jPoint.y);
-                        label_image(x, y) = 255;
+                        final_image(x+2, y+2) = false;
                     }
                 }
             }
         }
     }
     
-    //Export the label image
+    //Export the final image
     std::cout << "Exporting image to '" << filepath << "'" << std::endl;
-    exportImage(srcImageRange(label_image), vigra::ImageExportInfo(filepath.c_str()));
+    exportImage(srcImageRange(final_image), vigra::ImageExportInfo(filepath.c_str()));
 }
