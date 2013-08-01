@@ -82,7 +82,7 @@ class ElleDataSet
     ElleDataSet(std::string filepath);
     //Loads a data set
     void loadDataSet(std::string filepath);
-    //Draws a .png image from the dataset with the given dimensions
+    //Draws a .bmp image from the dataset with the given dimensions
     void exportToImage(int dim_x, int dim_y, std::string filepath);
 };
 
@@ -107,7 +107,7 @@ void ElleDataSet::loadDataSet(std::string filepath)
             inputLines.push_back(inputLine);
         }
         
-        std::cout << "processing..." << std::endl;
+        std::cout << " processing..." << std::endl;
         //The line numbers of the flynns and locations
         int flynnsLine = -1;
         int mineralLine = -1;
@@ -293,7 +293,7 @@ void ElleDataSet::loadDataSet(std::string filepath)
             flynns.push_back(flynn);
         }
         
-        std::cout << "done! Loaded " << flynns.size() << " flynns and " << locations.size() << " locations." << std::endl;
+        std::cout << flynns.size() << " flynns and " << locations.size() << " locations loaded." << std::endl;
     }
     else
     {

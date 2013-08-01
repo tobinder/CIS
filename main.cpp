@@ -1279,7 +1279,7 @@ int main(int argc, char *argv[])
             std::string elleImageFilename = elleDataSetFilepath;
             elleImageFilename = get_filename(elleImageFilename);
             elleImageFilename = elleImageFilename.substr(0, elleImageFilename.length() - 5);
-            elleImageFilename.append(".png");
+            elleImageFilename.append(".bmp");
 
             elleExportFilepath.append(elleImageFilename);
 
