@@ -96,7 +96,7 @@ void ElleDataSet::loadDataSet(std::string filepath)
 {
     std::cout << "Loading Elle simulation data set from file '" << filepath << "'" << std::endl;
     std::ifstream input(filepath.c_str());
-    std::vector<std::string> flynnsLines;
+    std::vector<std::string> startFlynnsLines;
 
     if(input)
     {
@@ -109,10 +109,10 @@ void ElleDataSet::loadDataSet(std::string filepath)
         
         std::cout << " processing..." << std::endl;
         //The line numbers of the flynns and locations
-        int flynnsLine = -1;
-        int mineralLine = -1;
-        int locationsLine = -1;
-        int unodesLine = -1;
+        int startFlynnsLine = -1;
+        int endFlynnsLine = -1;
+        int startLocationsLine = -1;
+        int endLocationsLine = inputLines.size();
         int optionsLine = -1;
         for(int i = 0; i < inputLines.size(); i++)
         {
@@ -122,40 +122,43 @@ void ElleDataSet::loadDataSet(std::string filepath)
                 break;
             }
         }        
+
+        //find start end end of flynns
         for(int i = 0; i < inputLines.size(); i++)
         {
             if(inputLines[i].compare("FLYNNS") == 0)
             {
-                flynnsLine = i;
+                startFlynnsLine = i;
+                break;
+            }
+        }
+        for(int i = startFlynnsLine; i < inputLines.size(); i++)
+        {
+            if(inputLines[i].compare("MINERAL") == 0 || inputLines[i].compare("LOCATION") == 0)
+            {
+                endFlynnsLine = i;
                 break;
             }
         }
 
-        for(int i = flynnsLine; i < inputLines.size(); i++)
-        {
-            if(inputLines[i].compare("MINERAL") == 0)
-            {
-                mineralLine = i;
-                break;
-            }
-        }
-        for(int i = mineralLine; i < inputLines.size(); i++)
+        //find start and end of locations
+        for(int i = endFlynnsLine; i < inputLines.size(); i++)
         {
             if(inputLines[i].compare("LOCATION") == 0)
             {
-                locationsLine = i;
+                startLocationsLine = i;
                 break;
             }
         }
-        for(int i = locationsLine; i < inputLines.size(); i++)
+        for(int i = startLocationsLine; i < inputLines.size(); i++)
         {
             if(inputLines[i].compare("UNODES") == 0)
             {
-                unodesLine = i;
+                endLocationsLine = i;
                 break;
             }
         }
-        if(flynnsLine == -1 || locationsLine == -1)
+        if(startFlynnsLine == -1 || startLocationsLine == -1)
         {
             std::cout << "Error reading the data set!" << std::endl;
             return;
@@ -168,7 +171,7 @@ void ElleDataSet::loadDataSet(std::string filepath)
         EllePoint2D bBox_UR;    //Upper right
         EllePoint2D bBox_UL;    //Upper left
         int bBoxLine = -1;
-        for(int i = optionsLine + 1; i < flynnsLine; i++)
+        for(int i = optionsLine + 1; i < startFlynnsLine; i++)
         {
             //Tokenize the line and store the substrings in a vector
             std::string line = inputLines[i];
@@ -234,7 +237,7 @@ void ElleDataSet::loadDataSet(std::string filepath)
         
         std::cout << "loading data into structures..." << std::endl;
         //Get the locations line per line
-        for(int i = locationsLine + 1; i < unodesLine; i++)
+        for(int i = startLocationsLine + 1; i < endLocationsLine; i++)
         {
             EllePoint2D p_temp;
             std::string line = inputLines[i];
@@ -252,7 +255,7 @@ void ElleDataSet::loadDataSet(std::string filepath)
         }
         
         //Get the flynns line per line
-        for(int i = flynnsLine + 1; i < mineralLine; i++)
+        for(int i = startFlynnsLine + 1; i < endFlynnsLine; i++)
         {
             ElleFlynn flynn;
             //Tokenize the line and store the substrings in a vector
