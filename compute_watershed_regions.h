@@ -729,7 +729,8 @@ void compute_watershed_regions(std::string source_image_path,std::string dest_im
     }
 
     //EXPORT SEGMENTATION TO A HDF5 file
-    export_ws_hdf5(dest_path, ws_image, dim_x, dim_y);
+    if (ParameterFile::filepath == "") export_ws_hdf5(dest_path, ws_image, dim_x, dim_y, false);
+    else export_ws_hdf5(dest_path, ws_image, dim_x, dim_y);
 
     std::string dest_cgp_path=dest_path;
     dest_cgp_path.resize(dest_cgp_path.size()-3);
