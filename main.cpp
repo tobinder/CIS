@@ -914,17 +914,21 @@ int main(int argc, char *argv[])
             std::string suffix=dest_path_boundary_features;
             suffix.resize(suffix.size()-1);
             suffix=get_filename(suffix);
-            suffix.append("/");
+            if (atoi(suffix.c_str())>0)
+            {
+                suffix.append("/");
+                std::cout<<"Found suffix: "<<suffix<<std::endl;
+            }
+            else suffix="";
+            
             if (path_thumbs!="no")
             {
-                std::cout<<"Found suffix: "<<suffix<<std::endl;
                 path_thumbs.append(suffix.c_str());
             }
 
             int i=2;
             while(i<argc-4)
             {
-                std::cout<<argv[i]<<std::endl;
                 //Check if grayscale or color
                 vigra::ImageImportInfo info(argv[i]);
 
