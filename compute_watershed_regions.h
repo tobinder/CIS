@@ -116,7 +116,7 @@ void export_ws_hdf5(std::string &dest_path, unsigned int** ws_image, int dim_x, 
     hid_t dataset_id = H5Dcreate1(file_save, "/ws_image", H5T_NATIVE_UINT, dataspace_id, H5P_DEFAULT);
 
     //dataspace for one row
-    hsize_t row[2];
+    hsize_t row[3];
     row[0] = 1;
     row[1] = dim_x;  
     row[2] = 1;
