@@ -570,22 +570,23 @@ int main(int argc, char *argv[])
                 strcpy(compare,".0.bmp");
                 source_image_path.copy(check_ending,6,source_image_path.size()-6);
                 if (strcmp(check_ending, compare)==0) std::cout<<source_image_path<<" ignored"<<std::endl;
-
-                std::string source_image_ext = source_image_path;
-                source_image_ext.append(".eed_ms.bmp");
-                FILE * eed_ext;
-                eed_ext = fopen(source_image_ext.c_str(), "r");
-
-                if(eed_ext != NULL)
-                {
-                    compute_watershed_regions(source_image_ext,dest_image_path,threshold,scale,equalTolerance,size,rank);
-                    i++;
-                }
                 else
                 {
-                    compute_watershed_regions(source_image_path,dest_image_path,threshold,scale,equalTolerance,size,rank);
-                    i++;
+                    std::string source_image_ext = source_image_path;
+                    source_image_ext.append(".eed_ms.bmp");
+                    FILE * eed_ext;
+                    eed_ext = fopen(source_image_ext.c_str(), "r");
+
+                    if(eed_ext != NULL)
+                    {
+                        compute_watershed_regions(source_image_ext,dest_image_path,threshold,scale,equalTolerance,size,rank);
+                    }
+                    else
+                    {
+                        compute_watershed_regions(source_image_path,dest_image_path,threshold,scale,equalTolerance,size,rank);
+                    }
                 }
+                i++;
             }
  
         }
