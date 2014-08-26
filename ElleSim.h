@@ -272,8 +272,9 @@ void ElleDataSet::loadDataSet(std::string filepath)
                 if(j == 0)
                 {
                     std::istringstream(lineResults[j]) >> flynn.number;
+                    //TODO: implement break if flynns are followed by attributes
                 }
-                else
+                else if(j > 1)
                 {
                     EllePoint2D p;
                     std::istringstream(lineResults[j]) >> p.number;
