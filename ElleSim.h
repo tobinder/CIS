@@ -253,9 +253,11 @@ void ElleDataSet::loadDataSet(std::string filepath)
             
             locations.push_back(p_temp);
         }
-        
+
+        bool endFound=false;
+        bool comment=false;
         //Get the flynns line per line
-        for(int i = startFlynnsLine + 1; i < endFlynnsLine; i++)
+        for(int i = startFlynnsLine + 1; i < endFlynnsLine && !endFound; i++)
         {
             ElleFlynn flynn;
             //Tokenize the line and store the substrings in a vector
@@ -267,12 +269,20 @@ void ElleDataSet::loadDataSet(std::string filepath)
             std::vector<std::string> lineResults(lineIt, lineEnd);
             
             std::vector<EllePoint2D> pV;
-            for(int j = 0; j < lineResults.size(); j++)
+            for(int j = 0; j < lineResults.size() && !endFound; j++)
             {
                 if(j == 0)
                 {
-                    std::istringstream(lineResults[j]) >> flynn.number;
-                    //TODO: implement break if flynns are followed by attributes
+                    std::string check=lineResults[j];
+                    check.resize(1);
+
+                    if (check=="0" || check=="1" || check=="2" || check=="3" || check=="4" ||
+                        check=="5" || check=="6" || check=="7" || check=="8" || check=="9")
+                    {
+                        std::istringstream(lineResults[j]) >> flynn.number;
+                    }
+                    else if(check=="#") comment=true;
+                    else endFound=true;
                 }
                 else if(j > 1)
                 {
@@ -293,8 +303,12 @@ void ElleDataSet::loadDataSet(std::string filepath)
                     }
                 }
             }
-            flynn.indices = pV;
-            flynns.push_back(flynn);
+
+            if(!comment && !endFound)
+            {
+                flynn.indices = pV;
+                flynns.push_back(flynn);
+            }
         }
         
         std::cout << flynns.size() << " flynns and " << locations.size() << " locations loaded." << std::endl;
