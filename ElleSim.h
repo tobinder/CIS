@@ -404,7 +404,7 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
         //Iterate through all flynn nodes, get the rasterized positions
         for(int j = 1; j < originalPositions.size(); j++)
         {
-            //Check if there are two points that are on opposite ends of the image (horizontal
+            //Check if there are two points that are on opposite ends of the image (horizontal)
             if(abs(originalPositions[j].rasterized.x - originalPositions[j-1].rasterized.x) >= img_x - max_diff_x)
             {
                 //Naive approach; certainly, this can be improved, but at least it yields correct results
@@ -494,8 +494,12 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
                 {
                     if(flynns[i].indices[k].number == artifacts[l].number)
                     {
-                        flynns[i].indices.erase(flynns[i].indices.begin() + k);
-                        k--;
+                        std::cout<<"artifact in flynn "<<flynns[i].number<<std::endl;
+                        flynns[i].indices.clear();
+                        break;
+
+                        //flynns[i].indices.erase(flynns[i].indices.begin() + k);
+                        //k--;
                     }
                 }
             }
@@ -521,7 +525,7 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
     int maxWidth = 0;
     for(int y = 0; y < 2*img_y; y++)
     {
-        for(int x = img_x; x < 2*img_x; x++)
+        for(int x = 0; x < 2*img_x; x++)
         {
             if(label_image_t(x, y) == 255)
             {
@@ -535,7 +539,7 @@ void ElleDataSet::exportToImage(int dim_x, int dim_y, std::string filepath)
    
     //Get the maximum height of the image
     int maxHeight = 0;
-    for(int y = img_y; y < 2*img_y; y++)
+    for(int y = 0; y < 2*img_y; y++)
     {
         for(int x = 0; x < 2*img_x; x++)
         {
